@@ -476,79 +476,80 @@
             }
 
             // --- UPLOAD FUNCTION (MODIFIED FOR COMPRESSION AND DB COLUMN NAMES) ---
-            async handleFileUpload(file, type) {
-                if (!file) {
-                    this.state.uploadStatus = 'No file selected.';
-                    this.render();
-                    return;
-                }
-                
-                // Status update: Starting compression
-                this.state.uploadStatus = `Processing and compressing ${type}...`;
-                this.render();
-
-                let fileToUpload = file;
-                let filePathExtension = file.name.split('.').pop();
-                
+            // Locate this function in your MemeGallery class:
+            async handleImageUpload(e) {
+                // 1. Get the file
+                const file = e.target.files[0];
+                if (!file) return;
+            
+                // 2. Set the loading state and RENDER immediately
+                this.setState('uploadStatus', 'Processing and compressing meme...');
+                this.render(); // This ensures the "Processing..." message is visible
+            
+                // 3. Wrap the HEAVY compression logic in a setTimeout(0)
+                await new Promise(resolve => setTimeout(resolve, 0)); 
+            
                 try {
-                    // 1. CALL THE COMPRESSION FUNCTION
-                    const compressedBlob = await compressImage(file); 
-                    fileToUpload = compressedBlob;
-                    filePathExtension = 'jpeg'; // Compression outputs a JPEG
-                    
-                } catch (err) {
-                    console.warn('Image compression failed, proceeding with original file:', err);
-                    this.state.uploadStatus = `Warning: Compression failed. Uploading original ${type}...`;
-                    this.render();
-                }
-                
-                // Use the determined extension for the path
-                const filePath = `${type}s/${Math.random().toString(36).substring(2, 9)}.${filePathExtension}`;
-                
-                this.state.uploadStatus = `Uploading ${type} to storage...`; 
-                this.render();
-
-                // 2. SUPABASE STORAGE UPLOAD (Uses the compressed file or original file)
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('gallery')
-                    .upload(filePath, fileToUpload); // Upload the compressed/original file
-
-                if (uploadError) {
-                    this.state.uploadStatus = `Upload failed (Storage): ${uploadError.message}`;
-                    console.error('Upload error (Storage):', uploadError);
-                    this.render();
-                    return;
-                }
-
-                const publicURL = `${supabaseUrl}/storage/v1/object/public/gallery/${filePath}`;
-
-                this.state.uploadStatus = 'Saving entry to database...';
-                this.render();
-
-                // 3. CRITICAL DATABASE FIX: Use 'imageUrl' and 'timestamp'
-                const { error: dbError } = await supabase
-                    .from(`${type}s`)
-                    .insert({ 
-                        imageUrl: publicURL, // Corrected column name
-                        uploadedBy: this.state.userEmail,
-                        timestamp: Date.now() // Corrected column name
+                    const compressedBlob = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                // Define a max size for better compression (e.g., 1200px max side)
+                                const MAX_WIDTH = 1200; 
+                                const ratio = Math.min(MAX_WIDTH / img.width, MAX_WIDTH / img.height);
+            
+                                // Ensure we don't upscale small images
+                                if (ratio < 1) { 
+                                    canvas.width = img.width * ratio;
+                                    canvas.height = img.height * ratio;
+                                } else {
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                }
+                                
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+                                // Convert to JPEG blob with 80% quality
+                                canvas.toBlob(
+                                    (blob) => {
+                                        if (blob) {
+                                            resolve(blob);
+                                        } else {
+                                            reject(new Error("Canvas toBlob failed"));
+                                        }
+                                    }, 
+                                    'image/jpeg', 
+                                    0.8 
+                                );
+                            };
+                            img.onerror = reject;
+                            img.src = e.target.result;
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
                     });
-                
-
-                if (dbError) {
-                    this.state.uploadStatus = `Database save failed: ${dbError.message}. Check browser console for full error.`;
-                    console.error('DB error:', dbError);
-                    // Attempt to clean up the storage file if DB save fails
-                    await supabase.storage.from('gallery').remove([filePath]);
-                } else {
-                    this.state.uploadStatus = `${type} uploaded and saved!`;
-                    await this.loadAllData();
-                }
-                
-                setTimeout(() => {
-                    this.state.uploadStatus = '';
+                    
+                    // The rest of your code:
+                    // 4. Update status for upload
+                    this.setState('uploadStatus', 'Uploading to Supabase...');
                     this.render();
-                }, 3000);
+            
+                    // 5. Upload the compressed blob
+                    await this.uploadMeme(compressedBlob);
+            
+                } catch (error) {
+                    console.error('Upload Error:', error);
+                    this.setState('uploadStatus', 'Upload Failed: ' + error.message);
+                    this.render();
+                    // Clear status after a delay
+                    setTimeout(() => {
+                        this.setState('uploadStatus', null);
+                        this.render();
+                    }, 5000);
+                }
             }
             // --- END OF MODIFIED UPLOAD FUNCTION ---
 
