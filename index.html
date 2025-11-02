@@ -26,456 +26,187 @@
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
         // =================================================================
-        // !!! 🚨 ACTION REQUIRED: REPLACE YOUR_SUPABASE_PROJECT_URL 🚨 !!!
+        // !!! 🚨 ACTION REQUIRED: REPLACE THESE PLACEHOLDERS 🚨 !!!
         // =================================================================
         const supabaseUrl = 'https://vspbfgmfszadpbegmous.supabase.co'; 
-        // NOTE: Use your Supabase 'anon' key here.
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzcGJmZ21mc3phZHBiZWdtb3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTg3MTMsImV4cCI6MjA3NzU5NDcxM30.Phjr2R8e22YH8PNUCP0Ls-_gE8pSRIFel34bvbJCUoQ'; 
-        // =================================================================
-        
+        // Use your Supabase 'anon' key here
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzcGJmZ21mc3phZHBiZWdtb3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTg3MTMsImV4cCI6MjA3NzU5NDcxM30.Phjr2R8e22YH8PNUCP0Ls-_gE8pSRIFel34bvbJCUoQ';
+
+        // --- INITIALIZE SUPABASE CLIENT ---
         const supabase = createClient(supabaseUrl, supabaseKey);
-
-        // Lucide Icons
+        
+        // --- GLOBAL ICONS ---
         const icons = {
-            Upload: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
-            LogOut: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`,
-            Star: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
-            Image: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`,
-            Lock: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
-            Heart: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-pink-500"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
-            ChevronLeft: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`,
-            ChevronRight: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
-            Download: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
-            Trash: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
-            Bell: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`
+            User: (size) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-${size} w-${size}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>`,
+            LockClosed: (size) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-${size} w-${size}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6a3 3 0 013-3h.01a3 3 0 013 3v2h-6V6z" /></svg>`,
+            X: (size) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-${size} w-${size}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>`,
+            ArrowLeft: (size) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-${size} w-${size}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>`,
+            ArrowRight: (size) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-${size} w-${size}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>`,
+            Upload: (size) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-${size} w-${size}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>`,
+            Collection: (size) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-${size} w-${size}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0v1h10V7m0 0H7" /></svg>`,
+            Heart: (size) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-${size} w-${size}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>`,
+            Trophy: (size) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-${size} w-${size}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 10h.01M12 10h.01M7 10h.01M21 12l-7-7M3 12l7-7m0 0l-4 4-3-3m0 0l-4 4-3-3m7 0h.01M21 12l-7-7" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21V11M9 18h6" /></svg>`,
+            Bell: (size) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-${size} w-${size}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`,
+            Trash: (size) => `<svg xmlns="http://www.w3.org/2000/svg" class="h-${size} w-${size}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>`,
         };
-
-        // Helper function to extract the Storage file path from the full public URL
-        function extractFilePath(url) {
-            const parts = url.split('/storage/v1/object/public/gallery/');
-            return parts.length > 1 ? parts[1] : null;
-        }
-
-        // Compress image to a Blob
-        function compressImage(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        
-                        const maxDimension = 1200; 
-                        if (width > maxDimension || height > maxDimension) {
-                            if (width > height) {
-                                height = (height / width) * maxDimension;
-                                width = maxDimension;
-                            } else {
-                                width = (width / height) * maxDimension;
-                                height = maxDimension;
-                            }
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        canvas.toBlob(
-                            (blob) => {
-                                if (blob) {
-                                    resolve(blob);
-                                } else {
-                                    reject(new Error('Canvas to Blob conversion failed'));
-                                }
-                            },
-                            'image/jpeg',
-                            0.7
-                        );
-                    };
-                    img.onerror = reject;
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                };
-            });
-        }
-
 
         class MemeGallery {
             constructor() {
+                this.root = document.getElementById('root');
                 this.state = {
-                    isLoggedIn: false,
-                    isAdmin: false, 
-                    isNoticesAdmin: false, 
                     userEmail: '',
+                    isAdmin: false, // Full Admin (050)
+                    isNoticesAdmin: false, // Notice Admin (050 or 051)
+                    showLogin: false,
                     email: '',
                     password: '',
-                    currentTab: 'notices', 
-                    hallOfFameMemes: [],
-                    hallOfFameMemories: [],
+                    currentTab: 'memes', // 'memes', 'memories', 'notices'
                     memes: [],
                     memories: [],
-                    notices: [], 
-                    showLogin: false,
-                    loading: true,
-                    error: '',
+                    hallOfFameMemes: [],
+                    hallOfFameMemories: [],
+                    notices: [],
                     uploadStatus: '',
                     memeScrollIndex: 0,
-                    memoryScrollIndex: 0
+                    memoryScrollIndex: 0,
+                    memeScrollInterval: null,
+                    memoryScrollInterval: null,
                 };
-                this.memeScrollInterval = null;
-                this.memoryScrollInterval = null;
+                
                 this.init();
             }
 
             async init() {
-                await Promise.all([this.loadAllData(), this.loadNotices()]); 
-                this.render();
+                // Check if user is logged in
+                await this.checkAuth();
+                
+                // Load initial data
+                await this.loadAllData();
+                
+                // Start auto-scroll for Hall of Fame
                 this.startAutoScroll();
+
+                // Initial render
+                this.render();
+            }
+
+            // --- STATE MANAGEMENT ---
+
+            async checkAuth() {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    this.state.userEmail = user.email;
+                    this.state.isAdmin = user.email === 'bt25csh050@iiitn.ac.in';
+                    this.state.isNoticesAdmin = this.state.isAdmin || user.email === 'bt25csh051@iiitn.ac.in';
+                } else {
+                    this.state.userEmail = '';
+                    this.state.isAdmin = false;
+                    this.state.isNoticesAdmin = false;
+                }
+            }
+            
+            async loadAllData() {
+                await Promise.all([
+                    this.loadMemes(),
+                    this.loadMemories(),
+                    this.loadNotices()
+                ]);
+            }
+
+            // --- DATA LOADERS ---
+
+            async loadMemes() {
+                const { data: memes, error } = await supabase
+                    .from('memes')
+                    .select('*')
+                    .order('createdAt', { ascending: false });
+
+                if (error) {
+                    console.error('Error loading memes:', error);
+                    return;
+                }
+                
+                this.state.memes = memes;
+                this.state.hallOfFameMemes = memes.filter(m => m.hallOfFame).sort((a, b) => b.votes - a.votes);
+            }
+
+            async loadMemories() {
+                const { data: memories, error } = await supabase
+                    .from('memories')
+                    .select('*')
+                    .order('createdAt', { ascending: false });
+
+                if (error) {
+                    console.error('Error loading memories:', error);
+                    return;
+                }
+
+                this.state.memories = memories;
+                this.state.hallOfFameMemories = memories.filter(m => m.hallOfFame).sort((a, b) => b.votes - a.votes);
             }
             
             async loadNotices() {
-                const { data, error } = await supabase
+                 const { data: notices, error } = await supabase
                     .from('notices')
-                    .select('id, content, uploadedBy, createdAt, timestamp')
-                    .order('timestamp', { ascending: false });
-
+                    .select('*')
+                    .order('timestamp', { ascending: false })
+                    .limit(10);
+                
                 if (error) {
                     console.error('Error loading notices:', error);
+                    return;
                 }
-                this.state.notices = data || [];
-                this.render(); 
-            }
-
-
-            async loadAllData() {
-                this.state.loading = true;
                 
-                const fetchAll = async (table) => {
-                    const { data, error } = await supabase
-                        .from(table)
-                        .select('id, imageUrl, uploadedBy, timestamp, is_hall_of_fame') 
-                        .order('timestamp', { ascending: false });
-                    if (error) {
-                        console.error(`Error loading ${table}:`, error);
-                        return [];
-                    }
-                    return data;
-                };
-
-                try {
-                    const [allMemes, allMemories] = await Promise.all([
-                        fetchAll('memes'),
-                        fetchAll('memories')
-                    ]);
-                    
-                    this.state.hallOfFameMemes = allMemes.filter(m => m.is_hall_of_fame);
-                    this.state.memes = allMemes.filter(m => !m.is_hall_of_fame);
-                    
-                    this.state.hallOfFameMemories = allMemories.filter(m => m.is_hall_of_fame);
-                    this.state.memories = allMemories.filter(m => !m.is_hall_of_fame);
-
-                } catch (err) {
-                    console.log('Error loading data:', err);
-                }
-                this.state.loading = false;
-                this.render(); 
+                this.state.notices = notices;
             }
 
-            // --- REVISED LOGIN LOGIC ---
-            handleLogin(e) {
+            // --- AUTH HANDLERS ---
+
+            async handleLogin(e) {
                 e.preventDefault();
-                this.state.error = '';
-
-                const emailLower = this.state.email.toLowerCase().trim();
+                const email = this.state.email;
                 const password = this.state.password;
-                const emailRegex = /^bt25csh\d{3}@iiitn\.ac\.in$/i;
+                
+                this.state.uploadStatus = 'Logging in...';
+                this.render();
 
-                let expectedPassword = null;
-                let isAdminCheck = false; 
-                let isNoticesAdminCheck = false; 
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-                // Admin 050 (Full Admin + Notices)
-                if (emailLower === 'bt25csh050@iiitn.ac.in') {
-                    expectedPassword = 'wushangclanssSS11!!';
-                    isAdminCheck = true;
-                    isNoticesAdminCheck = true; 
-                } 
-                // Admin 051 (Notices Only)
-                else if (emailLower === 'bt25csh051@iiitn.ac.in') {
-                    expectedPassword = 'iambtechboy'; 
-                    isAdminCheck = false;
-                    isNoticesAdminCheck = true; 
-                }
-                // Regular User credentials
-                else if (emailRegex.test(emailLower)) {
-                    expectedPassword = 'cshgoated'; 
-                    isAdminCheck = false;
-                    isNoticesAdminCheck = false; 
+                if (error) {
+                    this.state.uploadStatus = `Login failed: ${error.message}`;
+                    console.error('Login error:', error);
+                } else {
+                    await this.checkAuth();
+                    this.state.showLogin = false;
+                    this.state.uploadStatus = 'Login successful!';
+                    await this.loadAllData();
                 }
                 
-                if (!expectedPassword || password !== expectedPassword) {
-                    this.state.error = 'Invalid credentials or email format.';
+                setTimeout(() => {
+                    this.state.uploadStatus = '';
                     this.render();
-                    return;
+                }, 3000);
+            }
+
+            async handleLogout() {
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    console.error('Logout error:', error);
+                } else {
+                    this.state.userEmail = '';
+                    this.state.isAdmin = false;
+                    this.state.isNoticesAdmin = false;
+                    this.state.uploadStatus = 'Logged out.';
+                    this.loadAllData();
                 }
-                
-                this.state.isLoggedIn = true;
-                this.state.isAdmin = isAdminCheck;
-                this.state.isNoticesAdmin = isNoticesAdminCheck;
-                this.state.userEmail = emailLower; 
-                this.state.showLogin = false;
-                
-                this.render();
-            }
-
-            handleLogout() {
-                this.state.isLoggedIn = false;
-                this.state.isAdmin = false;
-                this.state.isNoticesAdmin = false; 
-                this.state.userEmail = '';
-                this.state.email = '';
-                this.state.password = '';
-                this.render();
-            }
-
-            // --- ADMIN WIPE AND ARCHIVE FUNCTION (UNCHANGED) ---
-            async handleWipeAndArchive() {
-                // ... (Logic remains the same) ...
-                if (!this.state.isAdmin) return;
-                
-                const confirmation = confirm("ADMIN WARNING: This action will permanently DOWNLOAD ALL IMAGES (BACKUP) and then DELETE ALL DATA and FILES from both the database tables (memes/memories/notices) and the Storage bucket (gallery) to FREE UP SPACE. Are you absolutely sure?");
-
-                if (!confirmation) {
-                    this.state.uploadStatus = 'Wipe operation cancelled.';
+                setTimeout(() => {
+                    this.state.uploadStatus = '';
                     this.render();
-                    return;
-                }
-
-                this.state.uploadStatus = 'ARCHIVING: Preparing to download all files...';
-                this.render();
-
-                try {
-                    const allMemes = await supabase.from('memes').select('imageUrl');
-                    const allMemories = await supabase.from('memories').select('imageUrl');
-
-                    const allUrls = [
-                        ...allMemes.data.map(m => m.imageUrl),
-                        ...allMemories.data.map(m => m.imageUrl)
-                    ];
-                    
-                    const allFilePaths = allUrls
-                        .map(extractFilePath)
-                        .filter(path => path !== null);
-
-                    if (allUrls.length === 0) {
-                        this.state.uploadStatus = 'No files found. Deleting empty database tables...';
-                    } else {
-                        this.state.uploadStatus = `ARCHIVING: Initiating download of ${allUrls.length} files. Please allow multiple downloads in your browser... (This is your backup!)`;
-                        this.render();
-
-                        allUrls.forEach((url, index) => {
-                            const a = document.createElement('a');
-                            a.href = url;
-                            const filename = url.substring(url.lastIndexOf('/') + 1);
-                            a.download = `archive-${index}_${filename}`;
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                        });
-
-                        await new Promise(resolve => setTimeout(resolve, 5000));
-                    }
-                    
-                    this.state.uploadStatus = `WIPE: Deleting ${allFilePaths.length} files from Storage to free up space...`;
-                    this.render();
-                    
-                    if (allFilePaths.length > 0) {
-                        const { error: storageDeleteError } = await supabase.storage
-                            .from('gallery')
-                            .remove(allFilePaths);
-
-                        if (storageDeleteError) {
-                            console.error('Storage wipe error:', storageDeleteError);
-                        }
-                    }
-
-                    this.state.uploadStatus = 'WIPE: Deleting all database entries...';
-                    this.render();
-                    
-                    const { error: memesDeleteError } = await supabase.from('memes').delete().neq('id', 0);
-                    if (memesDeleteError) console.error('Meme table deletion failed. Check RLS.');
-
-                    const { error: memoriesDeleteError } = await supabase.from('memories').delete().neq('id', 0);
-                    if (memoriesDeleteError) console.error('Memory table deletion failed. Check RLS.');
-                    
-                    const { error: noticesDeleteError } = await supabase.from('notices').delete().neq('id', 0);
-                    if (noticesDeleteError) console.error('Notices table deletion failed. Check RLS.');
-
-                    this.state.uploadStatus = `ARCHIVE & WIPE SUCCESSFUL: ${allUrls.length} files archived and all data/files deleted. Space is now free!`;
-                    this.loadAllData(); 
-                    this.loadNotices(); 
-                    
-                } catch (err) {
-                    this.state.uploadStatus = `WIPE FAILED: ${err.message}`;
-                    console.error('Wipe operation failed:', err);
-                    this.render();
-                }
-            }
-            
-            // --- NEW: DELETE INDIVIDUAL MEME/MEMORY FUNCTION (Admin 050 only) ---
-            async handleDeleteItem(id, type) {
-                if (!this.state.isAdmin) return;
-                this.state.uploadStatus = `Deleting ${type}...`;
-                this.render();
-
-                try {
-                    const table = type === 'memory' ? 'memories' : 'memes';
-                    
-                    // 1. Get the imageUrl to delete the file from storage
-                    const { data: itemData, error: fetchError } = await supabase
-                        .from(table)
-                        .select('imageUrl')
-                        .eq('id', id)
-                        .single();
-
-                    if (fetchError || !itemData) throw new Error('Item not found or fetch failed.');
-
-                    const filePath = extractFilePath(itemData.imageUrl);
-
-                    // 2. Delete the file from storage
-                    if (filePath) {
-                        const { error: storageError } = await supabase.storage
-                            .from('gallery')
-                            .remove([filePath]);
-                        
-                        if (storageError) console.error('Storage deletion error (non-fatal for DB cleanup):', storageError);
-                    }
-
-                    // 3. Delete the entry from the database
-                    const { error: dbError } = await supabase
-                        .from(table)
-                        .delete()
-                        .eq('id', id);
-
-                    if (dbError) throw dbError;
-                    
-                    this.state.uploadStatus = `${type} deleted successfully.`;
-                    this.loadAllData(); // Reload data
-                    setTimeout(() => {
-                        this.state.uploadStatus = '';
-                        this.render();
-                    }, 3000);
-
-                } catch (err) {
-                    this.state.uploadStatus = `Deletion failed: ${err.message}.`;
-                    console.error('Item deletion error:', err);
-                }
-                this.render();
+                }, 3000);
             }
 
-            // --- DELETE INDIVIDUAL NOTICE FUNCTION (Admin 050 & 051) ---
-            async handleDeleteNotice(id) {
-                // 1. DEBUG: Check Admin Status
-                console.log(`[DEBUG] Attempting to delete notice ID: ${id}`);
-                console.log(`[DEBUG] isNoticesAdmin status: ${this.state.isNoticesAdmin}`);
-            
-                if (!this.state.isNoticesAdmin) {
-                    // If this logs, you aren't logged in as 050 or 051.
-                    console.error("DEBUG ERROR: Admin check failed. Delete request blocked.");
-                    return; 
-                }
-            
-                this.state.uploadStatus = 'Deleting notice...';
-                this.render();
-            
-                try {
-                    const { error } = await supabase
-                        .from('notices')
-                        .delete()
-                        .eq('id', id);
-            
-                    if (error) {
-                        // If Supabase returns an error object, log it directly before throwing
-                        console.error("[SUPABASE ERROR]: The request returned an error object.", error);
-                        throw error;
-                    }
-                    
-                    // Success path
-                    this.state.uploadStatus = 'Notice deleted successfully.';
-                    this.loadNotices(); 
-                    setTimeout(() => {
-                        this.state.uploadStatus = '';
-                        this.render();
-                    }, 3000);
-            
-                } catch (err) {
-                    // 2. DEBUG: Catch and Log ALL Error Details
-                    this.state.uploadStatus = `Deletion failed: ${err.message}. Check browser console (F12) for full error details.`;
-                    console.error('------------------------------------------');
-                    console.error('FINAL NOTICE DELETION ERROR:', err);
-                    console.error('SUPABASE CODE (if available):', err.code || 'N/A');
-                    console.error('SUPABASE DETAILS (if available):', err.details || 'N/A');
-                    console.error('------------------------------------------');
-                }
-                this.render();
-            }
-            // --- ADD NOTICE FUNCTION (WITH 10-NOTICE LIMIT) ---
-            async handleAddNotice(content) {
-                if (!this.state.isNoticesAdmin || !content.trim()) return;
-                // ... (Logic remains the same as previous step) ...
-                this.state.uploadStatus = 'Posting notice...';
-                this.render();
-
-                try {
-                    // 1. Check current count and enforce limit (pop oldest)
-                    if (this.state.notices.length >= 10) {
-                        this.state.uploadStatus = 'Notice limit reached (10). Deleting oldest notice...';
-                        this.render();
-                        
-                        const oldestNotice = this.state.notices[this.state.notices.length - 1];
-                        
-                        const { error: deleteError } = await supabase
-                            .from('notices')
-                            .delete()
-                            .eq('id', oldestNotice.id);
-                            
-                        if (deleteError) {
-                            console.error('Failed to delete oldest notice. Inserting anyway:', deleteError);
-                        }
-                    }
-
-                    // 2. Insert new notice
-                    const { error } = await supabase
-                        .from('notices')
-                        .insert([
-                            {
-                                content: content.trim(),
-                                uploadedBy: this.state.userEmail,
-                                timestamp: Date.now(),
-                            }
-                        ]);
-
-                    if (error) throw error;
-                    
-                    this.state.uploadStatus = 'Notice posted successfully! 📢';
-                    document.getElementById('noticeContentInput').value = '';
-                    this.loadNotices();
-                    setTimeout(() => {
-                        this.state.uploadStatus = '';
-                        this.render();
-                    }, 3000);
-                    
-                } catch (err) {
-                    this.state.uploadStatus = `Notice post failed: ${err.message}. Check RLS on 'notices' table.`;
-                    console.error('Notice error:', err);
-                }
-                this.render();
-            }
-
-            // --- UPLOAD, PROMOTE, SCROLL (Retained/Adapted) ---
+            // --- FILE AND DB HANDLERS ---
+            // 🚀 FIX: Enhanced with DEBUG LOGGING to find where the upload is stalling
             async handleFileUpload(file, type) {
                 // 1. DEBUG: Log the start
                 console.log(`[DEBUG UPLOAD] Starting handleFileUpload for ${type}.`);
@@ -549,47 +280,538 @@
                 // Ensure only one vote per session/user is simple enough for this scope
                 const table = `${type}s`;
                 const item = this.state[`${table}`].find(i => i.id === id);
-            
-            async promoteToHallOfFame(item, type) { 
-                if (!this.state.isAdmin) return;
-                try {
-                    const sourceTable = type === 'memory' ? 'memories' : 'memes';
-                    const { error } = await supabase
-                        .from(sourceTable)
-                        .update({ is_hall_of_fame: true })
-                        .eq('id', item.id);
-                    
-                    if (error) throw error;
-                    this.loadAllData(); 
-                } catch (err) {
-                    console.error('Failed to promote:', err);
+                if (!item) return;
+
+                this.state.uploadStatus = 'Casting vote...';
+                this.render();
+                
+                const newVotes = item.votes + 1;
+                
+                const { error } = await supabase
+                    .from(table)
+                    .update({ votes: newVotes })
+                    .eq('id', id);
+
+                if (error) {
+                    this.state.uploadStatus = `Voting failed: ${error.message}`;
+                    console.error('Vote error:', error);
+                } else {
+                    this.state.uploadStatus = 'Vote successful!';
+                    await this.loadAllData();
                 }
+
+                setTimeout(() => {
+                    this.state.uploadStatus = '';
+                    this.render();
+                }, 3000);
             }
 
-            async removeFromHallOfFame(itemId, type) { 
+            async promoteToHallOfFame(item, type) {
                 if (!this.state.isAdmin) return;
-                try {
-                    const sourceTable = type === 'memory' ? 'memories' : 'memes';
-                    const { error } = await supabase
-                        .from(sourceTable)
-                        .update({ is_hall_of_fame: false })
-                        .eq('id', itemId);
-                    
-                    if (error) throw error;
-                    this.loadAllData(); 
-                } catch (err) {
-                    console.error('Failed to remove:', err);
+
+                const table = `${type}s`;
+                
+                this.state.uploadStatus = `Promoting ${type}...`;
+                this.render();
+
+                const { error } = await supabase
+                    .from(table)
+                    .update({ hallOfFame: true })
+                    .eq('id', item.id);
+                
+                if (error) {
+                    this.state.uploadStatus = `Promotion failed: ${error.message}`;
+                    console.error('Promotion error:', error);
+                } else {
+                    this.state.uploadStatus = 'Promoted to Hall of Fame!';
+                    await this.loadAllData();
                 }
+                
+                setTimeout(() => {
+                    this.state.uploadStatus = '';
+                    this.render();
+                }, 3000);
+            }
+
+            async removeFromHallOfFame(id, type) {
+                if (!this.state.isAdmin) return;
+
+                const table = `${type}s`;
+                
+                this.state.uploadStatus = `Removing ${type} from HoF...`;
+                this.render();
+
+                const { error } = await supabase
+                    .from(table)
+                    .update({ hallOfFame: false })
+                    .eq('id', id);
+                
+                if (error) {
+                    this.state.uploadStatus = `Removal failed: ${error.message}`;
+                    console.error('Removal error:', error);
+                } else {
+                    this.state.uploadStatus = 'Removed from Hall of Fame.';
+                    await this.loadAllData();
+                }
+                
+                setTimeout(() => {
+                    this.state.uploadStatus = '';
+                    this.render();
+                }, 3000);
+            }
+
+            async handleDeleteItem(id, type) {
+                if (!this.state.isAdmin) return;
+                
+                const table = `${type}s`;
+                const item = this.state[`${table}`].find(i => i.id === id);
+                if (!item) return;
+
+                this.state.uploadStatus = `Deleting ${type} and file...`;
+                this.render();
+
+                try {
+                    // 1. Delete from storage
+                    const filePath = item.url.split('gallery/')[1];
+                    const { error: storageError } = await supabase.storage
+                        .from('gallery')
+                        .remove([filePath]);
+                    
+                    if (storageError) {
+                        console.error('Storage deletion error:', storageError);
+                        // Do not throw, continue to delete DB record
+                    }
+
+                    // 2. Delete from database
+                    const { error: dbError } = await supabase
+                        .from(table)
+                        .delete()
+                        .eq('id', id);
+
+                    if (dbError) {
+                        this.state.uploadStatus = `Database deletion failed: ${dbError.message}`;
+                        console.error('DB deletion error:', dbError);
+                        throw dbError;
+                    }
+                    
+                    this.state.uploadStatus = `${type} deleted permanently.`;
+                    await this.loadAllData();
+                    
+                } catch (err) {
+                    this.state.uploadStatus = `Deletion failed: ${err.message}`;
+                    console.error('Final deletion error:', err);
+                }
+                
+                setTimeout(() => {
+                    this.state.uploadStatus = '';
+                    this.render();
+                }, 3000);
             }
             
-            // --- RENDERING ---
+            // --- NOTICES HANDLERS (Admin 050 & 051) ---
+
+            async handleAddNotice(content) {
+                if (!this.state.isNoticesAdmin || content.trim().length === 0) return;
+                
+                this.state.uploadStatus = 'Posting notice...';
+                this.render();
+
+                try {
+                    // 1. Check current count and enforce limit (pop oldest)
+                    if (this.state.notices.length >= 10) {
+                        // Find the notice with the smallest timestamp (oldest)
+                        const oldestNotice = this.state.notices.sort((a, b) => a.timestamp - b.timestamp)[this.state.notices.length - 1];
+                        await supabase.from('notices').delete().eq('id', oldestNotice.id);
+                    }
+
+                    // 2. Insert new notice
+                    const { error } = await supabase
+                        .from('notices')
+                        .insert([
+                            {
+                                content: content.trim(), 
+                                uploadedBy: this.state.userEmail,
+                                timestamp: Date.now() 
+                            }
+                        ]);
+
+                    if (error) throw error;
+                        
+                    this.state.uploadStatus = 'Announcement posted!';
+                    document.getElementById('noticeContentInput').value = ''; // Clear input
+                    await this.loadNotices();
+                } catch (err) {
+                    this.state.uploadStatus = `Post failed: ${err.message}`;
+                    console.error('Notice post error:', err);
+                }
+                
+                setTimeout(() => {
+                    this.state.uploadStatus = '';
+                    this.render();
+                }, 3000);
+            }
+
+            async handleDeleteNotice(id) {
+                // 1. DEBUG: Check Admin Status
+                console.log(`[DEBUG] Attempting to delete notice ID: ${id}`);
+                console.log(`[DEBUG] isNoticesAdmin status: ${this.state.isNoticesAdmin}`);
+
+                if (!this.state.isNoticesAdmin) {
+                    console.error("DEBUG ERROR: Admin check failed. Delete request blocked.");
+                    return; 
+                }
+
+                this.state.uploadStatus = 'Deleting notice...';
+                this.render();
+
+                try {
+                    // 🚀 CRITICAL FIX: The filter (.eq) must come before the action (.delete)
+                    const { error } = await supabase
+                        .from('notices')
+                        .eq('id', id)  // Find the row to delete
+                        .delete();    // Execute the delete operation
+
+                    if (error) {
+                        // If Supabase returns an error object, log it directly before throwing
+                        console.error("[SUPABASE ERROR]: The request returned an error object.", error);
+                        throw error;
+                    }
+                    
+                    // Success path
+                    this.state.uploadStatus = 'Notice deleted successfully.';
+                    this.loadNotices(); 
+                    setTimeout(() => {
+                        this.state.uploadStatus = '';
+                        this.render();
+                    }, 3000);
+
+                } catch (err) {
+                    // 2. DEBUG: Catch and Log ALL Error Details
+                    this.state.uploadStatus = `Deletion failed: ${err.message}. Check browser console (F12) for full error details.`;
+                    console.error('------------------------------------------');
+                    console.error('FINAL NOTICE DELETION FAILED:', err);
+                    console.error('SUPABASE CODE (if available):', err.code || 'N/A');
+                    console.error('SUPABASE DETAILS (if available):', err.details || 'N/A');
+                    console.error('------------------------------------------');
+                }
+                this.render();
+            }
+
+            // --- ADMIN WIPE ---
+
+            async handleWipeAndArchive() {
+                if (!this.state.isAdmin) return;
+
+                if (!confirm("FULL ADMIN WARNING: This will permanently delete ALL memes/memories NOT in the Hall of Fame and clear all votes. Proceed?")) {
+                    return;
+                }
+                
+                this.state.uploadStatus = 'Wiping data...';
+                this.render();
+
+                try {
+                    // 1. Reset votes on Hall of Fame items
+                    const { error: resetMemeError } = await supabase
+                        .from('memes')
+                        .update({ votes: 0 })
+                        .eq('hallOfFame', true);
+                    
+                    const { error: resetMemoryError } = await supabase
+                        .from('memories')
+                        .update({ votes: 0 })
+                        .eq('hallOfFame', true);
+                    
+                    if (resetMemeError || resetMemoryError) throw new Error('Failed to reset votes.');
+
+                    // 2. Delete non-HoF items
+                    const { error: deleteMemeError } = await supabase
+                        .from('memes')
+                        .delete()
+                        .eq('hallOfFame', false);
+
+                    const { error: deleteMemoryError } = await supabase
+                        .from('memories')
+                        .delete()
+                        .eq('hallOfFame', false);
+                        
+                    if (deleteMemeError || deleteMemoryError) throw new Error('Failed to delete non-HoF items.');
+
+                    this.state.uploadStatus = 'Gallery wiped and HoF votes reset successfully!';
+                    await this.loadAllData();
+
+                } catch (err) {
+                    this.state.uploadStatus = `Wipe failed: ${err.message}`;
+                    console.error('Wipe error:', err);
+                }
+
+                setTimeout(() => {
+                    this.state.uploadStatus = '';
+                    this.render();
+                }, 5000);
+            }
+
+            // --- RENDER METHODS ---
+
+            renderLoginModal() {
+                if (!this.state.showLogin) return '';
+
+                return `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
+                            <div class="flex justify-between items-start mb-6">
+                                <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-2">${icons.LockClosed(6)} Admin Login</h2>
+                                <button id="closeLogin" class="text-gray-400 hover:text-gray-600">${icons.X(6)}</button>
+                            </div>
+                            <form id="loginForm">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Email (e.g., bt25csh050@iiitn.ac.in)</label>
+                                    <input type="email" id="emailInput" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                                </div>
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                    <input type="password" id="passwordInput" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required>
+                                </div>
+                                <button id="loginBtn" class="admin-gradient text-white w-full py-3 rounded-xl font-bold hover:opacity-90 transition shadow-lg flex items-center justify-center gap-2">
+                                    ${icons.User(6)} Log In
+                                </button>
+                            </form>
+                            <p class="mt-4 text-center text-xs text-gray-500">Only authorized CSH batch accounts can log in.</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderHeader() {
+                const isAdmin = this.state.isAdmin;
+                const isNoticesAdmin = this.state.isNoticesAdmin;
+                const isLoggedIn = this.state.userEmail;
+
+                return `
+                    <header class="bg-white shadow-md sticky top-0 z-10">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                            <div class="flex justify-between items-center">
+                                <h1 class="text-3xl font-extrabold text-indigo-600 tracking-tighter flex items-center gap-2">
+                                    ${icons.Collection(8)} CSH Gallery
+                                </h1>
+                                
+                                <div class="flex items-center gap-4">
+                                    ${isLoggedIn ? `
+                                        <span class="text-sm font-medium text-gray-600 hidden sm:inline-block">Logged in as: ${this.state.userEmail}</span>
+                                        <button id="logoutBtn" class="text-white bg-red-500 px-4 py-2 rounded-full text-sm font-semibold hover:bg-red-600 transition shadow-md">
+                                            Logout
+                                        </button>
+                                    ` : `
+                                        <button id="showLoginBtn" class="admin-gradient text-white px-4 py-2 rounded-full text-sm font-semibold hover:opacity-90 transition shadow-md flex items-center gap-1">
+                                            ${icons.LockClosed(4)} Admin
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                            
+                            <nav class="mt-4 border-t border-gray-200 pt-3">
+                                <div class="flex space-x-4">
+                                    ${this.renderTabButton('memes', 'Memes')}
+                                    ${this.renderTabButton('memories', 'Memories')}
+                                    ${this.renderTabButton('notices', 'Notices')}
+                                </div>
+                            </nav>
+                        </div>
+                    </header>
+                `;
+            }
+
+            renderTabButton(tabName, label) {
+                const isActive = this.state.currentTab === tabName;
+                const activeClasses = 'bg-indigo-600 text-white shadow-lg';
+                const inactiveClasses = 'text-gray-600 hover:bg-gray-100 hover:text-indigo-600';
+                
+                return `
+                    <button data-tab="${tabName}" class="px-6 py-2 rounded-full text-sm font-bold transition ${isActive ? activeClasses : inactiveClasses}">
+                        ${label}
+                    </button>
+                `;
+            }
+
+            renderHallOfFame(items, type) {
+                if (items.length === 0) {
+                    return `<div class="text-center py-6 text-gray-500">No items in the Hall of Fame yet!</div>`;
+                }
+
+                const scrollContainerId = `${type}-scroll-container`;
+                const scrollIndex = type === 'meme' ? this.state.memeScrollIndex : this.state.memoryScrollIndex;
+
+                return `
+                    <div class="relative overflow-hidden rounded-xl shadow-2xl bg-white border-2 border-indigo-500/50">
+                        <div id="${scrollContainerId}" class="scroll-container flex snap-x snap-mandatory" style="transform: translateX(-${scrollIndex * 100}%)">
+                            ${items.map((item, index) => {
+                                const isVideo = item.url.match(/\.(mp4|mov|webm)$/i);
+                                return `
+                                    <div class="snap-start snap-full flex-shrink-0 p-6">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <div class="flex items-center text-sm font-bold text-indigo-700">
+                                                ${icons.Trophy(6)} 
+                                                <span class="ml-2 tracking-widest uppercase">HALL OF FAME</span>
+                                            </div>
+                                            <span class="text-sm font-medium text-gray-500">Votes: ${item.votes}</span>
+                                        </div>
+                                        <div class="flex justify-center items-center h-[400px] bg-gray-100 rounded-xl overflow-hidden shadow-inner">
+                                            ${isVideo ? `
+                                                <video class="max-h-full max-w-full object-contain" src="${item.url}" controls loop></video>
+                                            ` : `
+                                                <img class="max-h-full max-w-full object-contain" src="${item.url}" alt="HoF ${type}">
+                                            `}
+                                        </div>
+                                        <div class="mt-4 flex justify-between items-center">
+                                            <span class="text-sm text-gray-500">Uploaded by: ${item.uploadedBy}</span>
+                                            ${this.state.isAdmin ? `
+                                                <button data-remove-hof="${item.id}" data-type="${type}" class="flex items-center gap-1 bg-red-500 text-white px-3 py-1.5 text-xs rounded-xl font-semibold hover:bg-red-600 transition shadow-md">
+                                                    ${icons.X(4)} Remove
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        
+                        ${items.length > 1 ? `
+                            <button data-scroll="${type}" data-direction="prev" class="absolute left-3 top-1/2 transform -translate-y-1/2 bg-white/70 p-2 rounded-full shadow-lg hover:bg-white transition text-indigo-600">
+                                ${icons.ArrowLeft(6)}
+                            </button>
+                            <button data-scroll="${type}" data-direction="next" class="absolute right-3 top-1/2 transform -translate-y-1/2 bg-white/70 p-2 rounded-full shadow-lg hover:bg-white transition text-indigo-600">
+                                ${icons.ArrowRight(6)}
+                            </button>
+                        ` : ''}
+                        
+                        <div class="absolute bottom-3 left-0 right-0 flex justify-center space-x-2">
+                            ${items.map((_, index) => `
+                                <span class="block w-2 h-2 rounded-full ${index === scrollIndex ? 'bg-indigo-600' : 'bg-gray-300'} transition"></span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderGallery(items, type) {
+                const isVideo = (url) => url.match(/\.(mp4|mov|webm)$/i);
+
+                return `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        ${items.map(item => `
+                            <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-300 overflow-hidden flex flex-col">
+                                <div class="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                                    ${isVideo(item.url) ? `
+                                        <video class="w-full h-full object-cover" src="${item.url}" controls loop></video>
+                                    ` : `
+                                        <img class="w-full h-full object-cover" src="${item.url}" alt="${type}" loading="lazy">
+                                    `}
+                                </div>
+                                <div class="p-4 flex flex-col flex-grow">
+                                    <div class="flex items-center justify-between">
+                                        <button data-vote-id="${item.id}" data-type="${type}" class="flex items-center gap-1 text-red-500 hover:text-red-700 transition">
+                                            ${icons.Heart(6)} 
+                                            <span class="text-lg font-bold">${item.votes}</span>
+                                        </button>
+                                        <span class="text-sm text-gray-500">by ${item.uploadedBy}</span>
+                                    </div>
+                                    <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
+                                        ${this.state.isAdmin ? `
+                                            ${!item.hallOfFame ? `
+                                                <button data-promote="${item.id}" data-type="${type}" class="flex items-center gap-1 admin-gradient text-white px-3 py-1.5 text-xs rounded-xl font-semibold hover:opacity-90 transition shadow-md">
+                                                    ${icons.Trophy(4)} Promote
+                                                </button>
+                                            ` : `
+                                                <span class="text-sm text-indigo-600 font-semibold flex items-center gap-1">${icons.Trophy(4)} In HoF</span>
+                                            `}
+                                            <button data-delete-item="${item.id}" data-type="${type}" class="flex items-center gap-1 bg-red-600 text-white px-3 py-1.5 text-xs rounded-xl font-semibold hover:bg-red-700 transition shadow-md">
+                                                ${icons.Trash(4)} Delete
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            renderMemesTab() {
+                const showUpload = this.state.userEmail && this.state.currentTab === 'memes';
+
+                return `
+                    <div class="max-w-7xl mx-auto py-8">
+                        <div class="flex items-center gap-4 mb-8">
+                            <span class="text-4xl">😂</span>
+                            <h2 class="text-4xl font-extrabold text-gray-800 tracking-tight">Meme Hall of Fame</h2>
+                        </div>
+                        ${this.renderHallOfFame(this.state.hallOfFameMemes, 'meme')}
+
+                        <div class="flex items-center gap-4 mt-12 mb-8">
+                            <span class="text-4xl">🖼️</span>
+                            <h2 class="text-4xl font-extrabold text-gray-800 tracking-tight">Latest Uploads</h2>
+                        </div>
+                        
+                        ${showUpload ? `
+                            <div class="bg-indigo-50 p-6 rounded-xl shadow-inner mb-8 flex justify-between items-center">
+                                <label for="fileInputMeme" class="upload-gradient text-white px-6 py-3 rounded-full font-bold cursor-pointer hover:opacity-90 transition shadow-lg flex items-center gap-2">
+                                    ${icons.Upload(6)} Upload New Meme
+                                </label>
+                                <input type="file" id="fileInputMeme" data-type="meme" accept="image/*,video/mp4,video/webm" class="hidden">
+                                <button id="showLoginBtn_gated" class="text-indigo-600 font-semibold hover:underline">Or Login to upload</button>
+                            </div>
+                        ` : ''}
+
+                        ${this.state.memes.length === 0 ? `
+                            <div class="text-center py-16 bg-white rounded-xl shadow-lg border-2 border-gray-200">
+                                <p class="text-gray-600 text-xl font-medium">No memes yet! Be the first to upload.</p>
+                            </div>
+                        ` : this.renderGallery(this.state.memes.filter(m => !m.hallOfFame), 'meme')}
+                    </div>
+                `;
+            }
+
+            renderMemoriesTab() {
+                const showUpload = this.state.userEmail && this.state.currentTab === 'memories';
+
+                return `
+                    <div class="max-w-7xl mx-auto py-8">
+                        <div class="flex items-center gap-4 mb-8">
+                            <span class="text-4xl">📸</span>
+                            <h2 class="text-4xl font-extrabold text-gray-800 tracking-tight">Memory Hall of Fame</h2>
+                        </div>
+                        ${this.renderHallOfFame(this.state.hallOfFameMemories, 'memory')}
+
+                        <div class="flex items-center gap-4 mt-12 mb-8">
+                            <span class="text-4xl">📔</span>
+                            <h2 class="text-4xl font-extrabold text-gray-800 tracking-tight">Latest Uploads</h2>
+                        </div>
+
+                        ${showUpload ? `
+                            <div class="bg-indigo-50 p-6 rounded-xl shadow-inner mb-8 flex justify-between items-center">
+                                <label for="fileInputMemory" class="upload-gradient text-white px-6 py-3 rounded-full font-bold cursor-pointer hover:opacity-90 transition shadow-lg flex items-center gap-2">
+                                    ${icons.Upload(6)} Upload New Memory
+                                </label>
+                                <input type="file" id="fileInputMemory" data-type="memory" accept="image/*,video/mp4,video/webm" class="hidden">
+                                <button id="showLoginBtn_gated" class="text-indigo-600 font-semibold hover:underline">Or Login to upload</button>
+                            </div>
+                        ` : ''}
+                        
+                        ${this.state.memories.length === 0 ? `
+                            <div class="text-center py-16 bg-white rounded-xl shadow-lg border-2 border-gray-200">
+                                <p class="text-gray-600 text-xl font-medium">No memories yet! Share your batch journey.</p>
+                            </div>
+                        ` : this.renderGallery(this.state.memories.filter(m => !m.hallOfFame), 'memory')}
+                    </div>
+                `;
+            }
+            
             renderNoticesTab() {
                 const isNoticesAdmin = this.state.isNoticesAdmin;
                 
                 return `
                     <div class="max-w-4xl mx-auto py-8">
                         <div class="flex items-center gap-4 mb-8">
-                            ${icons.Bell(36)}
+                            ${icons.Bell(8)}
                             <h2 class="text-4xl font-extrabold text-gray-800 tracking-tight">Community Notices</h2>
                         </div>
                         
@@ -622,8 +844,8 @@
                                     const bgColor = isTop ? 'bg-indigo-600 text-white shadow-2xl ring-4 ring-indigo-300/50' : 'bg-white text-gray-800 shadow-lg border border-gray-200 hover:shadow-xl';
                                     const headerColor = isTop ? 'text-indigo-200' : 'text-indigo-600';
                                     
-                                    // NEW, safer block for BigInt timestamps:
-                                    const dateObj = new Date(Number(notice.timestamp)); // Convert the BigInt/Number to a Date object
+                                    // 🚀 FIX APPLIED HERE: Correctly parse the BigInt/number timestamp
+                                    const dateObj = new Date(Number(notice.timestamp)); 
                                     const timestamp = dateObj.toLocaleDateString('en-US', {
                                         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                                     });
@@ -642,7 +864,7 @@
                                                 <span class="text-sm ${isTop ? 'text-indigo-300' : 'text-gray-500'}">Posted by: ${notice.uploadedBy}</span>
                                                 ${isNoticesAdmin ? `
                                                     <button data-delete-notice="${notice.id}" class="flex items-center gap-1 bg-red-600 text-white px-3 py-1.5 text-xs rounded-xl font-semibold hover:bg-red-700 transition shadow-md">
-                                                        ${icons.Trash(14)} Delete
+                                                        ${icons.Trash(4)} Delete
                                                     </button>
                                                 ` : ''}
                                             </div>
@@ -655,266 +877,79 @@
                 `;
             }
 
-
-            renderMainPage() {
-                const isMemeTab = this.state.currentTab === 'memes';
-                const isMemoryTab = this.state.currentTab === 'memories';
-                const isNoticesTab = this.state.currentTab === 'notices'; 
-
-                const currentData = isMemeTab 
-                    ? { hall: this.state.hallOfFameMemes, regular: this.state.memes, type: 'meme', color: 'purple' }
-                    : { hall: this.state.hallOfFameMemories, regular: this.state.memories, type: 'memory', color: 'pink' };
-
-                const tabColor = isMemeTab ? 'border-purple-600 text-purple-600' : 'border-pink-600 text-pink-600';
-                const tabColorHover = isMemeTab ? 'hover:text-purple-600' : 'hover:text-pink-600';
-
+            renderFooter() {
                 return `
-                    <div class="min-h-screen bg-slate-50">
-                        <nav class="bg-white shadow-lg sticky top-0 z-20">
-                            <div class="max-w-7xl mx-auto px-4 py-4">
-                                <div class="flex items-center justify-between mb-4">
-                                    <div class="flex items-center gap-4">
-                                        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tighter">CSH Gallery</h1>
-                                        <p class="text-sm text-gray-500 border-l pl-3">${this.state.isLoggedIn ? 'Access Granted' : 'Public View'}</p>
-                                    </div>
-                                    <div class="flex items-center gap-4">
-                                        ${this.state.isAdmin ? `
-                                            <button id="wipeAndArchiveBtn" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition text-sm font-semibold shadow-md">
-                                                ${icons.Download(16)} ${icons.Trash(16)}
-                                                Archive & Wipe
-                                            </button>
-                                        ` : ''}
-                                        ${!this.state.isLoggedIn ? `
-                                            <button id="showLoginBtn" class="flex items-center gap-2 admin-gradient text-white px-4 py-2 rounded-xl hover:opacity-90 transition text-sm font-semibold shadow-md">
-                                                ${icons.Lock(16)}
-                                                Admin Login
-                                            </button>
-                                        ` : `
-                                            <div class="flex items-center gap-3">
-                                                ${this.state.isAdmin ? '<span class="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm">FULL ADMIN</span>' : this.state.isNoticesAdmin ? '<span class="bg-indigo-400 text-indigo-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm">NOTICE ADMIN</span>' : ''}
-                                                <span class="text-sm text-gray-600 font-medium">${this.state.userEmail}</span>
-                                                <button id="logoutBtn" class="flex items-center gap-2 bg-slate-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-slate-300 transition text-sm font-semibold">
-                                                    ${icons.LogOut(16)}
-                                                    Logout
-                                                </button>
-                                            </div>
-                                        `}
-                                    </div>
-                                </div>
-                                
-                                <div class="flex gap-1">
-                                    <button data-tab="notices" class="${isNoticesTab ? 'border-b-4 border-indigo-600 text-indigo-700' : 'text-gray-500 hover:text-indigo-600'} px-6 py-3 font-extrabold transition flex items-center text-lg">
-                                        ${icons.Bell(20)}
-                                        <span class="ml-2">Notices</span>
-                                    </button>
-                                    <button data-tab="memes" class="${isMemeTab ? `border-b-4 ${tabColor}` : `text-gray-500 ${tabColorHover}`} px-6 py-3 font-extrabold transition text-lg">
-                                        Memes
-                                    </button>
-                                    <button data-tab="memories" class="${isMemoryTab ? `border-b-4 ${tabColor}` : `text-gray-500 ${tabColorHover}`} px-6 py-3 font-extrabold transition text-lg">
-                                        Memories
-                                    </button>
-                                </div>
-                            </div>
-                        </nav>
-
-                        <div class="max-w-7xl mx-auto px-4 py-12">
-                            
-                            ${isNoticesTab ? this.renderNoticesTab() : `
-                                
-                                <div class="mb-16">
-                                    <div class="flex items-center gap-3 mb-6">
-                                        ${isMemeTab ? icons.Star(36) : icons.Heart(36)}
-                                        <h2 class="text-3xl font-extrabold text-gray-800 tracking-tight">Hall of Fame</h2>
-                                        <span class="text-sm text-gray-500 ml-auto">${isMemeTab ? 'The funniest memes ever.' : 'Memories that warm the heart.'}</span>
-                                    </div>
-                                    ${this.state.loading ? `
-                                        <div class="text-center py-12 bg-white rounded-2xl shadow-lg"><p class="text-gray-600">Loading...</p></div>
-                                    ` : this.renderScrollingHallOfFame(currentData.hall, currentData.type)}
-                                </div>
-
-                                ${this.state.uploadStatus ? `
-                                    <div class="bg-indigo-100 border-l-4 border-indigo-500 text-indigo-800 p-4 mb-10 rounded-lg shadow-md" role="alert">
-                                        <p class="font-bold">Gallery Status</p>
-                                        <p>${this.state.uploadStatus}</p>
-                                    </div>
-                                ` : ''}
-
-                                ${this.state.isLoggedIn ? `
-                                    
-                                    <div class="mb-12 bg-white rounded-2xl p-8 shadow-xl border-4 ${isMemeTab ? 'border-purple-200/50' : 'border-pink-200/50'}">
-                                        <h2 class="text-2xl font-bold text-gray-800 mb-5">Share Your ${isMemeTab ? 'Meme' : 'Memory'}</h2>
-                                        <label class="flex items-center justify-center gap-3 upload-gradient text-white px-8 py-4 rounded-xl cursor-pointer transition font-extrabold text-lg hover:shadow-2xl hover:scale-[1.01] transform duration-300 shadow-xl">
-                                            ${icons.Upload(24)}
-                                            Choose ${isMemeTab ? 'Meme' : 'Memory'} File (Max 5MB)
-                                            <input id="fileInput" type="file" accept="image/*" class="hidden">
-                                        </label>
-                                        <p class="text-sm text-gray-500 mt-3 text-center">Uploading as: ${this.state.userEmail}</p>
-                                    </div>
-
-                                    <div>
-                                        <h2 class="text-3xl font-extrabold text-gray-800 mb-8 border-b pb-4">Latest ${isMemeTab ? 'Memes' : 'Memories'}</h2>
-                                        ${currentData.regular.length === 0 ? `
-                                            <div class="text-center py-20 bg-white rounded-2xl shadow-lg border-2 border-gray-200">
-                                                ${icons.Image(72)}
-                                                <p class="text-gray-600 text-xl font-medium mt-4">No ${this.state.currentTab} yet. Be the first to upload!</p>
-                                            </div>
-                                        ` : `
-                                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                                                ${currentData.regular.map(item => `
-                                                    <div class="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition transform hover:-translate-y-1 relative group">
-                                                        <div class="aspect-square bg-gray-100 flex items-center justify-center">
-                                                            <img src="${item.imageUrl}" alt="${currentData.type}" class="w-full h-full object-contain">
-                                                        </div>
-                                                        <div class="p-4">
-                                                            <p class="text-sm text-gray-700">By: <span class="font-bold">${item.uploadedBy}</span></p>
-                                                            <p class="text-xs text-gray-500 mt-1">${new Date(item.timestamp).toLocaleDateString()}</p>
-                                                        </div>
-                                                        ${this.state.isAdmin ? `
-                                                            <div class="absolute top-2 right-2 flex gap-2">
-                                                                <button data-promote="${item.id}" data-type="${currentData.type}" class="bg-white text-gray-700 p-2 rounded-full text-xs flex items-center justify-center shadow-lg hover:scale-110 transition hover:text-black hover:bg-yellow-200/80">
-                                                                    ${isMemeTab ? icons.Star(18) : icons.Heart(18)}
-                                                                </button>
-                                                                <button data-delete-item="${item.id}" data-type="${currentData.type}" class="bg-red-600 text-white p-2 rounded-full text-xs shadow-lg hover:bg-red-700 hover:scale-110 transition">
-                                                                    ${icons.Trash(18)}
-                                                                </button>
-                                                            </div>
-                                                        ` : ''}
-                                                    </div>
-                                                `).join('')}
-                                            </div>
-                                        `}
-                                    </div>
-                                ` : `
-                                    <div class="text-center py-20 bg-white rounded-2xl shadow-xl border-4 border-gray-300/50">
-                                        ${icons.Lock(64)}
-                                        <h3 class="text-3xl font-bold text-gray-700 mt-6">Login Required</h3>
-                                        <p class="text-gray-500 mt-3 text-lg">Please log in to view the full gallery and upload content.</p>
-                                        <button id="showLoginBtn_gated" class="mt-8 flex items-center gap-2 admin-gradient text-white px-8 py-3 rounded-xl hover:opacity-90 transition text-lg font-semibold mx-auto shadow-lg">
-                                            ${icons.Lock(20)}
-                                            Login Now
-                                        </button>
-                                    </div>
-                                `}
-                            `}
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-12 border-t border-gray-200">
+                        <div class="text-center text-sm text-gray-500">
+                            CSH Meme & Memory Gallery | Built with Supabase & Tailwind CSS. 
                         </div>
-                    </div>
-                `;
-            }
-
-            renderLoginModal() {
-                 return `
-                    <div class="fixed inset-0 bg-gray-900 bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50">
-                        <div class="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md relative transform transition-all scale-100 duration-300">
-                            <button id="closeLogin" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-3xl transition">×</button>
-                            
-                            <div class="text-center mb-10">
-                                <h1 class="text-4xl font-extrabold text-gray-800 mb-2">CSH Login</h1>
-                                <p class="text-gray-500 text-lg">Use your official BT25CSH credentials.</p>
-                            </div>
-
-                            <form id="loginForm" class="space-y-6">
-                                <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-2">Email</label>
-                                    <input id="emailInput" type="email" value="${this.state.email}" placeholder="bt25cshXXX@iiitn.ac.in" class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:outline-none focus:ring-4 focus:ring-indigo-500/50 transition">
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-2">Password</label>
-                                    <input id="passwordInput" type="password" value="${this.state.password}" class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:outline-none focus:ring-4 focus:ring-indigo-500/50 transition">
-                                </div>
-
-                                ${this.state.error ? `<div class="bg-red-100 text-red-700 p-4 rounded-xl text-sm font-medium border border-red-200">${this.state.error}</div>` : ''}
-
-                                <button id="loginBtn" class="w-full admin-gradient text-white py-3.5 rounded-xl font-bold text-lg hover:opacity-90 transition shadow-lg" type="submit">
-                                    Sign In
+                        ${this.state.isAdmin ? `
+                            <div class="mt-4 text-center">
+                                <button id="wipeAndArchiveBtn" class="bg-red-500 text-white px-4 py-2 rounded-full text-xs font-semibold hover:bg-red-600 transition shadow-md">
+                                    ADMIN: Wipe Non-HoF Data
                                 </button>
-                            </form>
-                        </div>
-                    </div>
-                `;
-            }
-
-            renderScrollingHallOfFame(items, type) {
-                 if (items.length === 0) {
-                    return `
-                        <div class="text-center py-16 bg-white rounded-2xl shadow-xl border-4 ${type === 'memory' ? 'border-pink-300/50' : 'border-yellow-300/50'}">
-                            ${type === 'memory' ? icons.Heart(64) : icons.Star(64)}
-                            <p class="text-gray-700 text-xl font-medium mt-4">No Hall of Fame ${type === 'memory' ? 'Memories' : 'Memes'} yet!</p>
-                            ${this.state.isAdmin ? '<p class="text-sm text-gray-500 mt-2">Promote an item from the gallery below.</p>' : ''}
-                        </div>
-                    `;
-                }
-
-                const containerId = type === 'memory' ? 'memory-scroll-container' : 'meme-scroll-container';
-                const borderColor = type === 'memory' ? 'border-pink-400' : 'border-yellow-400';
-                const bgGradient = type === 'memory' ? 'from-pink-100 to-purple-100' : 'from-yellow-100 to-orange-100';
-
-                return `
-                    <div class="relative max-w-7xl mx-auto">
-                        <div id="${containerId}" class="scroll-container overflow-x-scroll snap-x snap-mandatory relative rounded-2xl shadow-xl">
-                            <div class="flex">
-                                ${items.map(item => `
-                                    <div class="snap-start snap-full px-2 py-1">
-                                        <div class="bg-white rounded-2xl overflow-hidden shadow-2xl border-4 ${borderColor} relative mx-auto">
-                                            <div class="aspect-[16/9] bg-gray-100 flex items-center justify-center">
-                                                <img src="${item.imageUrl}" alt="Hall of Fame" class="w-full h-full object-contain">
-                                            </div>
-                                            <div class="p-5 flex items-center justify-between bg-gradient-to-r ${type === 'meme' ? 'from-yellow-50 to-orange-50' : 'from-pink-50 to-purple-50'}">
-                                                <div>
-                                                    <p class="text-xl font-bold text-gray-800">${type === 'meme' ? 'Hall of Fame Meme' : 'Golden Memory'}</p>
-                                                    <p class="text-sm text-gray-600">By: <span class="font-semibold">${item.uploadedBy}</span> (${new Date(item.timestamp).toLocaleDateString()})</p>
-                                                </div>
-                                                ${this.state.isAdmin ? `
-                                                    <button data-remove-hof="${item.id}" data-type="${type}" class="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-red-600 shadow-md transition">
-                                                        Remove
-                                                    </button>
-                                                ` : ''}
-                                            </div>
-                                        </div>
-                                    </div>
-                                `).join('')}
                             </div>
-                        </div>
-                        ${items.length > 1 ? `
-                            <button data-scroll="${type}" data-direction="prev" class="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-100 rounded-full p-2.5 shadow-xl z-10 text-gray-700 hover:text-gray-900 transition ml-2">
-                                ${icons.ChevronLeft(36)}
-                            </button>
-                            <button data-scroll="${type}" data-direction="next" class="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-100 rounded-full p-2.5 shadow-xl z-10 text-gray-700 hover:text-gray-900 transition mr-2">
-                                ${icons.ChevronRight(36)}
-                            </button>
                         ` : ''}
                     </div>
                 `;
             }
 
-
-            render() {
-                const root = document.getElementById('root');
+            renderStatusBanner() {
+                if (!this.state.uploadStatus) return '';
                 
-                if (this.state.showLogin) {
-                    root.innerHTML = this.renderLoginModal();
-                } else {
-                    root.innerHTML = this.renderMainPage();
+                const isError = this.state.uploadStatus.includes('failed') || this.state.uploadStatus.includes('Error');
+                const bgColor = isError ? 'bg-red-500' : 'bg-indigo-600';
+
+                return `
+                    <div class="fixed bottom-0 right-0 m-6 p-4 rounded-xl shadow-2xl text-white font-bold transition duration-300 ${bgColor} z-50">
+                        ${this.state.uploadStatus}
+                    </div>
+                `;
+            }
+
+            // --- MAIN RENDER LOOP ---
+            render() {
+                let content;
+                switch (this.state.currentTab) {
+                    case 'memories':
+                        content = this.renderMemoriesTab();
+                        break;
+                    case 'notices':
+                        content = this.renderNoticesTab();
+                        break;
+                    case 'memes':
+                    default:
+                        content = this.renderMemesTab();
+                        break;
                 }
+
+                this.root.innerHTML = `
+                    ${this.renderHeader()}
+                    <main class="min-h-[70vh] px-4 sm:px-6 lg:px-8">
+                        ${content}
+                    </main>
+                    ${this.renderFooter()}
+                    ${this.renderLoginModal()}
+                    ${this.renderStatusBanner()}
+                `;
 
                 this.attachEventListeners();
                 
-                requestAnimationFrame(() => {
-                    const memeContainer = document.getElementById('meme-scroll-container');
-                    const memoryContainer = document.getElementById('memory-scroll-container');
-
-                    if (memeContainer) {
-                        const width = memeContainer.offsetWidth;
-                        memeContainer.scrollLeft = width * this.state.memeScrollIndex;
-                    }
-                    if (memoryContainer) {
-                        const width = memoryContainer.offsetWidth;
-                        memoryContainer.scrollLeft = width * this.state.memoryScrollIndex;
-                    }
-                });
+                // Manually trigger scroll after rendering HoF items
+                const memeContainer = document.getElementById('meme-scroll-container');
+                if (memeContainer) {
+                    memeContainer.scrollLeft = memeContainer.clientWidth * this.state.memeScrollIndex;
+                }
+                const memoryContainer = document.getElementById('memory-scroll-container');
+                if (memoryContainer) {
+                    memoryContainer.scrollLeft = memoryContainer.clientWidth * this.state.memoryScrollIndex;
+                }
             }
+            
+            // --- EVENT LISTENERS ---
 
             attachEventListeners() {
+                // Modal
                 const closeLogin = document.getElementById('closeLogin');
                 if (closeLogin) closeLogin.onclick = () => { this.state.showLogin = false; this.render(); };
 
@@ -924,21 +959,21 @@
                 if (showLoginBtn) showLoginBtn.onclick = showLogin;
                 if (showLoginBtnGated) showLoginBtnGated.onclick = showLogin;
 
+                // Auth
                 const loginForm = document.getElementById('loginForm');
                 if (loginForm) loginForm.onsubmit = (e) => this.handleLogin(e);
                 
                 const loginBtn = document.getElementById('loginBtn');
                 if (loginBtn) loginBtn.onclick = (e) => this.handleLogin(e); 
-
-
+                
                 const logoutBtn = document.getElementById('logoutBtn');
                 if (logoutBtn) logoutBtn.onclick = () => this.handleLogout();
-                
-                // Admin Wipe Button
+
+                // Admin
                 const wipeAndArchiveBtn = document.getElementById('wipeAndArchiveBtn');
                 if (wipeAndArchiveBtn) wipeAndArchiveBtn.onclick = () => this.handleWipeAndArchive();
                 
-                // New Notice Post Button
+                // Notice Post Button
                 const postNoticeBtn = document.getElementById('postNoticeBtn');
                 if (postNoticeBtn) postNoticeBtn.onclick = () => {
                     const contentInput = document.getElementById('noticeContentInput');
@@ -947,11 +982,10 @@
                     }
                 };
                 
-                // 🚀 FIX APPLIED HERE: Notice Delete Buttons
+                // Notice Delete Buttons (FIXED)
                 document.querySelectorAll('[data-delete-notice]').forEach(btn => {
                     btn.onclick = () => {
                         const noticeId = parseInt(btn.getAttribute('data-delete-notice'));
-                        // Ensure parseInt works correctly
                         if (isNaN(noticeId)) {
                              console.error("Invalid notice ID for deletion.");
                              return;
@@ -972,17 +1006,37 @@
                         }
                     };
                 });
-
-
+                
+                // Form Inputs
                 const emailInput = document.getElementById('emailInput');
                 if (emailInput) emailInput.oninput = (e) => { this.state.email = e.target.value; };
 
                 const passwordInput = document.getElementById('passwordInput');
                 if (passwordInput) passwordInput.oninput = (e) => { this.state.password = e.target.value; };
+                
+                // Upload Inputs
+                const fileInputMeme = document.getElementById('fileInputMeme');
+                if (fileInputMeme) fileInputMeme.onchange = (e) => this.handleFileUpload(e.target.files[0], 'meme');
 
-                const fileInput = document.getElementById('fileInput');
-                if (fileInput) fileInput.onchange = (e) => this.handleFileUpload(e.target.files[0], this.state.currentTab === 'memories' ? 'memory' : 'meme');
+                const fileInputMemory = document.getElementById('fileInputMemory');
+                if (fileInputMemory) fileInputMemory.onchange = (e) => this.handleFileUpload(e.target.files[0], 'memory');
 
+                // Voting
+                document.querySelectorAll('[data-vote-id]').forEach(btn => {
+                    btn.onclick = () => {
+                        if (!this.state.userEmail) {
+                            alert("Please log in to cast a vote.");
+                            this.state.showLogin = true;
+                            this.render();
+                            return;
+                        }
+                        const itemId = parseInt(btn.getAttribute('data-vote-id'));
+                        const type = btn.getAttribute('data-type');
+                        this.handleVote(itemId, type);
+                    };
+                });
+
+                // Tabs
                 document.querySelectorAll('[data-tab]').forEach(btn => {
                     btn.onclick = () => {
                         this.state.currentTab = btn.getAttribute('data-tab');
@@ -995,6 +1049,7 @@
                     };
                 });
                 
+                // HoF Scroll
                 document.querySelectorAll('[data-scroll]').forEach(btn => {
                     btn.onclick = () => {
                         const type = btn.getAttribute('data-scroll');
@@ -1007,6 +1062,7 @@
                     };
                 });
 
+                // HoF Promote
                 document.querySelectorAll('[data-promote]').forEach(btn => {
                     btn.onclick = () => {
                         const itemId = parseInt(btn.getAttribute('data-promote'));
@@ -1017,6 +1073,7 @@
                     };
                 });
 
+                // HoF Remove
                 document.querySelectorAll('[data-remove-hof]').forEach(btn => {
                     btn.onclick = () => {
                         const itemId = parseInt(btn.getAttribute('data-remove-hof'));
@@ -1025,12 +1082,15 @@
                     };
                 });
             }
+
+            // --- SCROLL LOGIC ---
             
-            // Auto-scroll and manual scroll functions (omitted for brevity, they are unchanged)
             scrollMemes(direction) { 
                 const container = document.getElementById('meme-scroll-container');
                 if (!container) return;
                 const totalItems = this.state.hallOfFameMemes.length;
+                if (totalItems <= 1) return;
+
                 let newIndex = this.state.memeScrollIndex;
 
                 if (direction === 'next') {
@@ -1047,6 +1107,8 @@
                 const container = document.getElementById('memory-scroll-container');
                 if (!container) return;
                 const totalItems = this.state.hallOfFameMemories.length;
+                if (totalItems <= 1) return;
+                
                 let newIndex = this.state.memoryScrollIndex;
 
                 if (direction === 'next') {
@@ -1060,16 +1122,20 @@
             }
 
             startAutoScroll() {
+                // Clear any existing intervals
                 if (this.memeScrollInterval) clearInterval(this.memeScrollInterval);
+                if (this.memoryScrollInterval) clearInterval(this.memoryScrollInterval);
+
+                // Start Meme Auto-Scroll
                 this.memeScrollInterval = setInterval(() => {
-                    if (this.state.currentTab === 'memes') {
+                    if (this.state.currentTab === 'memes' && this.state.hallOfFameMemes.length > 1) {
                         this.scrollMemes('next');
                     }
                 }, 5000);
 
-                if (this.memoryScrollInterval) clearInterval(this.memoryScrollInterval);
+                // Start Memory Auto-Scroll
                 this.memoryScrollInterval = setInterval(() => {
-                    if (this.state.currentTab === 'memories') {
+                    if (this.state.currentTab === 'memories' && this.state.hallOfFameMemories.length > 1) {
                         this.scrollMemories('next');
                     }
                 }, 5000);
