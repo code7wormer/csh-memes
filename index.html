@@ -13,17 +13,18 @@
 <body>
     <div id="root"></div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        // --- MODIFICATION: Import Firebase Storage modules ---
+        import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyB7eRfEYcEVkudLbANLJXFR1q5z9weJuIs",
             authDomain: "csh-memes.firebaseapp.com",
             projectId: "csh-memes",
-            storageBucket: "csh-memes.firebasestorage.app",
+            storageBucket: "csh-memes.appspot.com", // <-- Make sure this is correct in your Firebase console
             messagingSenderId: "1044239899607",
             appId: "1:1044239899607:web:ba89f70716487e001e4992",
             measurementId: "G-RY1YE3HL4B"
@@ -32,8 +33,10 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        // --- MODIFICATION: Initialize Firebase Storage ---
+        const storage = getStorage(app);
 
-        // Lucide Icons as inline SVG
+        // Lucide Icons (unchanged)
         const icons = {
             Upload: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
             LogOut: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`,
@@ -45,7 +48,7 @@
             ChevronRight: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`
         };
 
-        // Compress image before uploading
+        // --- MODIFICATION: Compress image to a Blob, not a base64 string ---
         function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -72,7 +75,18 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
                         
-                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                        // Resolve with the image as a Blob
+                        canvas.toBlob(
+                            (blob) => {
+                                if (blob) {
+                                    resolve(blob);
+                                } else {
+                                    reject(new Error('Canvas to Blob conversion failed'));
+                                }
+                            },
+                            'image/jpeg',
+                            0.7 // 70% quality
+                        );
                     };
                     img.onerror = reject;
                     img.src = e.target.result;
@@ -167,6 +181,7 @@
                 this.state.loading = false;
             }
 
+            // Unchanged methods (startAutoScroll, scrollMemes, scrollMemories, handleLogin, handleLogout)
             startAutoScroll() {
                 this.memeScrollInterval = setInterval(() => {
                     if (this.state.hallOfFameMemes.length > 1) {
@@ -241,6 +256,7 @@
                 this.render();
             }
 
+            // --- MODIFICATION: Rewritten handleFileUpload to use Firebase Storage ---
             async handleFileUpload(file, type) {
                 if (!file) return;
 
@@ -250,29 +266,40 @@
                     return;
                 }
 
-                if (file.size > 5 * 1024 * 1024) {
-                    this.state.uploadStatus = 'Image must be less than 5MB';
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit for original file
+                    this.state.uploadStatus = 'Original image must be less than 5MB';
                     this.render();
                     return;
                 }
 
-                this.state.uploadStatus = 'Compressing and uploading...';
+                this.state.uploadStatus = 'Compressing image...';
                 this.render();
 
                 try {
-                    const compressedImage = await compressImage(file);
-                    const sizeInBytes = (compressedImage.length * 3) / 4;
-                    if (sizeInBytes > 1000000) {
-                        this.state.uploadStatus = 'Image too large after compression. Try a smaller image.';
-                        this.render();
-                        return;
-                    }
+                    const compressedBlob = await compressImage(file);
+                    
+                    this.state.uploadStatus = 'Uploading to storage...';
+                    this.render();
 
                     const timestamp = Date.now();
                     const collectionName = type === 'memory' ? 'memories' : 'memes';
+                    
+                    // Create a unique file path in Storage
+                    const storagePath = `${collectionName}/${timestamp}-${file.name}`;
+                    const storageRef = ref(storage, storagePath);
 
+                    // Upload the compressed blob
+                    const snapshot = await uploadBytes(storageRef, compressedBlob);
+
+                    // Get the public download URL
+                    const downloadURL = await getDownloadURL(snapshot.ref);
+
+                    this.state.uploadStatus = 'Saving to gallery...';
+                    this.render();
+
+                    // Save the URL to Firestore (not the image data)
                     await addDoc(collection(db, collectionName), {
-                        imageData: compressedImage,
+                        imageUrl: downloadURL, // <-- Store the URL
                         uploadedBy: this.state.userEmail,
                         timestamp: timestamp,
                         fileName: file.name
@@ -284,19 +311,20 @@
                         this.render();
                     }, 3000);
                 } catch (err) {
-                    this.state.uploadStatus = 'Upload failed. Please try again.';
+                    this.state.uploadStatus = 'Upload failed. Check console for errors.';
                     console.error('Upload error:', err);
                 }
                 this.render();
             }
 
+            // --- MODIFICATION: Update to move the URL, not the data ---
             async promoteToHallOfFame(item, type) {
                 try {
                     const hofCollection = type === 'memory' ? 'hall-of-fame-memories' : 'hall-of-fame-memes';
                     const sourceCollection = type === 'memory' ? 'memories' : 'memes';
 
                     await addDoc(collection(db, hofCollection), {
-                        imageData: item.imageData,
+                        imageUrl: item.imageUrl, // <-- Store the URL
                         uploadedBy: item.uploadedBy,
                         timestamp: item.timestamp,
                         fileName: item.fileName
@@ -362,6 +390,7 @@
                 `;
             }
 
+            // --- MODIFICATION: Load image from item.imageUrl ---
             renderScrollingHallOfFame(items, type) {
                 if (items.length === 0) {
                     return `
@@ -384,7 +413,7 @@
                                 ${items.map(item => `
                                     <div class="min-w-full px-2">
                                         <div class="bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-lg border-4 ${borderColor} relative max-w-3xl mx-auto">
-                                            <img src="${item.imageData}" alt="Hall of Fame" class="w-full h-96 object-contain bg-white">
+                                            <img src="${item.imageUrl}" alt="Hall of Fame" class="w-full h-96 object-contain bg-white">
                                             <div class="p-6">
                                                 <p class="text-base text-gray-700">By: <span class="font-semibold">${item.uploadedBy}</span></p>
                                                 <p class="text-sm text-gray-600">${new Date(item.timestamp).toLocaleDateString()}</p>
@@ -411,6 +440,7 @@
                 `;
             }
 
+            // --- MODIFICATION: Load image from item.imageUrl ---
             renderMainPage() {
                 const currentData = this.state.currentTab === 'memes' 
                     ? { hall: this.state.hallOfFameMemes, regular: this.state.memes, type: 'meme' }
@@ -464,7 +494,7 @@
                                         Choose ${this.state.currentTab === 'memes' ? 'Meme' : 'Memory'} to Upload
                                         <input id="fileInput" type="file" accept="image/*" class="hidden">
                                     </label>
-                                    ${this.state.uploadStatus ? `<p class="mt-4 text-center text-green-600 font-medium">${this.state.uploadStatus}</p>` : ''}
+                                    ${this.state.uploadStatus ? `<p class="mt-4 text-center ${this.state.uploadStatus.includes('failed') ? 'text-red-600' : 'text-green-600'} font-medium">${this.state.uploadStatus}</p>` : ''}
                                 </div>
                             ` : ''}
 
@@ -490,7 +520,7 @@
                                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                             ${currentData.regular.map(item => `
                                                 <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition relative">
-                                                    <img src="${item.imageData}" alt="${currentData.type}" class="w-full h-64 object-contain bg-gray-100">
+                                                    <img src="${item.imageUrl}" alt="${currentData.type}" class="w-full h-64 object-contain bg-gray-100">
                                                     <div class="p-4">
                                                         <p class="text-sm text-gray-700">By: <span class="font-semibold">${item.uploadedBy}</span></p>
                                                         <p class="text-xs text-gray-600">${new Date(item.timestamp).toLocaleDateString()}</p>
