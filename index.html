@@ -900,7 +900,7 @@
 
                 const loginForm = document.getElementById('loginForm');
                 if (loginForm) loginForm.onsubmit = (e) => this.handleLogin(e);
-                // loginBtn remains for clarity, but form submit is preferred
+                
                 const loginBtn = document.getElementById('loginBtn');
                 if (loginBtn) loginBtn.onclick = (e) => this.handleLogin(e); 
 
@@ -921,17 +921,22 @@
                     }
                 };
                 
-                // Notice Delete Buttons
+                // 🚀 FIX APPLIED HERE: Notice Delete Buttons
                 document.querySelectorAll('[data-delete-notice]').forEach(btn => {
                     btn.onclick = () => {
                         const noticeId = parseInt(btn.getAttribute('data-delete-notice'));
+                        // Ensure parseInt works correctly
+                        if (isNaN(noticeId)) {
+                             console.error("Invalid notice ID for deletion.");
+                             return;
+                        }
                         if (confirm('Are you sure you want to permanently delete this notice?')) {
                             this.handleDeleteNotice(noticeId);
                         }
                     };
                 });
 
-                // NEW: Item Delete Buttons (Memes/Memories)
+                // Item Delete Buttons (Memes/Memories)
                 document.querySelectorAll('[data-delete-item]').forEach(btn => {
                     btn.onclick = () => {
                         const itemId = parseInt(btn.getAttribute('data-delete-item'));
