@@ -1132,7 +1132,10 @@
             }
         }
 
-        new MemeGallery();
+        // --- FINAL FIX: Defer initialization until the DOM is ready ---
+        document.addEventListener('DOMContentLoaded', () => {
+            new MemeGallery();
+        });
     </script>
 </body>
 </html>
