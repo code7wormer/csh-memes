@@ -1335,15 +1335,23 @@
                 if (!container || this.state.hallOfFameMemes.length === 0) return;
                 const totalItems = this.state.hallOfFameMemes.length;
                 let newIndex = this.state.memeScrollIndex;
+                let changed = false; // <-- NEW FLAG
 
                 if (direction === 'next') {
                     newIndex = (newIndex + 1) % totalItems;
+                    changed = true;
                 } else if (direction === 'prev') {
                     newIndex = (newIndex - 1 + totalItems) % totalItems;
+                    changed = true;
                 }
-                
-                this.state.memeScrollIndex = newIndex;
-                this.render(); 
+                // Only update state and re-render if the index actually changed (for manual buttons)
+                if (changed || this.state.memeScrollIndex !== newIndex) { 
+                    this.state.memeScrollIndex = newIndex;
+                }
+                const width = container.offsetWidth;
+                container.scrollLeft = width * this.state.memeScrollIndex;
+                // DO NOT CALL this.render() HERE
+            
             }
 
             scrollMemories(direction) { 
@@ -1351,34 +1359,42 @@
                 if (!container || this.state.hallOfFameMemories.length === 0) return;
                 const totalItems = this.state.hallOfFameMemories.length;
                 let newIndex = this.state.memoryScrollIndex;
+                let changed = false; // <-- NEW FLAG
 
                 if (direction === 'next') {
                     newIndex = (newIndex + 1) % totalItems;
+                    changed = true; // <-- SET FLAG
                 } else if (direction === 'prev') {
                     newIndex = (newIndex - 1 + totalItems) % totalItems;
+                    changed = true; // <-- SET FLAG
                 }
 
-                this.state.memoryScrollIndex = newIndex;
-                this.render(); 
+                if (changed || this.state.memoryScrollIndex !== newIndex) {
+                    this.state.memoryScrollIndex = newIndex;
+                }
+                
+                // CRITICAL FIX: Direct DOM manipulation for scrolling
+                const width = container.offsetWidth;
+                container.scrollLeft = width * this.state.memoryScrollIndex;
+                // DO NOT CALL this.render() HERE
             }
 
             startAutoScroll() {
+               // Ensure intervals are cleared on startup
                 if (this.memeScrollInterval) clearInterval(this.memeScrollInterval);
                 this.memeScrollInterval = setInterval(() => {
                     if (this.state.currentTab === 'memes' && !this.state.showLogin) {
-                        this.scrollMemes('next');
+                        this.scrollMemes('next'); // Calls direct DOM update
                     }
                 }, 5000);
 
                 if (this.memoryScrollInterval) clearInterval(this.memoryScrollInterval);
                 this.memoryScrollInterval = setInterval(() => {
                     if (this.state.currentTab === 'memories' && !this.state.showLogin) {
-                        this.scrollMemories('next');
+                        this.scrollMemories('next'); // Calls direct DOM update
                     }
                 }, 5000);
             }
-        }
-
         // --- Defer initialization until the DOM is ready ---
         document.addEventListener('DOMContentLoaded', () => {
             new MemeGallery();
