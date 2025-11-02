@@ -3,22 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSH Meme Gallery - BT25CSH (Supabase)</title>
+    <title>CSH Gallery - BT25CSH - V.2.0: ARCADE MODE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Modern scroll behavior and hiding scrollbars */
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; background-color: #f8fafc; }
+        /* --- CUSTOM GAMING STYLES --- */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        body { 
+            margin: 0; 
+            /* NEW: Gaming Font */
+            font-family: 'Orbitron', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; 
+            /* NEW: Deep space background color */
+            background-color: #0b0c10; 
+            color: #c5c8d1; /* Light grey/off-white for contrast */
+        }
+        
+        /* NEW: Utility Classes for a Tech/Neon Look */
+        .neon-text-cyan { 
+            color: #00f2ff;
+            text-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff, 0 0 20px rgba(0, 242, 255, 0.4);
+        }
+        .neon-text-pink {
+            color: #ff0077;
+            text-shadow: 0 0 5px #ff0077, 0 0 10px #ff0077, 0 0 20px rgba(255, 0, 119, 0.4);
+        }
+        .tech-border { border: 2px solid #334155; box-shadow: 0 0 10px rgba(51, 65, 85, 0.5); }
+        .tech-box-bg { background-color: #1a1b26; }
+        
+        /* Custom scroll behavior (unchanged but placed here for clarity) */
         .scroll-container { scroll-behavior: smooth; overflow-x: scroll; }
         .snap-full { min-width: 100%; }
         .scroll-container::-webkit-scrollbar { display: none; }
         .scroll-container { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Custom gradient for hero elements */
-        .admin-gradient { background-image: linear-gradient(to right, #1d4ed8, #4f46e5); }
-        .upload-gradient { background-image: linear-gradient(to right, #6d28d9, #9333ea); }
+        /* NEW: Custom gradients for a high-tech/cyber look */
+        .admin-gradient { 
+            background-image: linear-gradient(to right, #00f2ff, #0077ff); /* Neon Blue/Cyan */
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.6); 
+        }
+        .upload-gradient { 
+            background-image: linear-gradient(to right, #ff0077, #aa00ff); /* Cyber Pink/Violet */
+            box-shadow: 0 0 15px rgba(255, 0, 119, 0.6); 
+        }
+        
+        /* Keyframes for animations */
+        @keyframes pulse-shadow {
+            0%, 100% { box-shadow: 0 0 10px rgba(0, 242, 255, 0.6), 0 0 0 0 rgba(0, 242, 255, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(0, 242, 255, 0.9), 0 0 0 10px rgba(0, 242, 255, 0); }
+        }
+        .animate-pulse-shadow {
+            animation: pulse-shadow 2s infinite ease-in-out;
+        }
+
+        @keyframes scanline-bg {
+            0% { background-position: 0 0; }
+            100% { background-position: 100% 100%; }
+        }
+        .scanline-effect {
+            background-image: linear-gradient(
+                rgba(255, 255, 255, 0.05) 1px, 
+                transparent 1px
+            );
+            background-size: 100% 4px;
+            animation: scanline-bg 20s linear infinite;
+        }
+        /* Style for the Hall of Fame cards */
+        .hof-card {
+            border-image: linear-gradient(45deg, #00f2ff, #ff0077) 1;
+            border-width: 3px;
+            border-style: solid;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2), 0 0 20px rgba(255, 0, 119, 0.2);
+            transition: all 0.3s;
+        }
+        .hof-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.5), 0 0 30px rgba(255, 0, 119, 0.5);
+        }
+
+        /* Sparkle effect on successful login - CSS for a subtle touch */
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1.5) rotate(180deg); }
+        }
+        .login-sparkle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle, #fff, #ff0077);
+            border-radius: 50%;
+            animation: sparkle 1s ease-out forwards;
+        }
     </style>
 </head>
-<body>
+<body class="scanline-effect">
     <div id="root"></div>
 
     <script type="module">
@@ -37,17 +114,18 @@
 
         // Lucide Icons
         const icons = {
-            Upload: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
-            LogOut: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`,
+            // NEW: Updated colors for a neon theme (e.g., text-cyan-400 or text-pink-500 for icons)
+            Upload: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-cyan"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
+            LogOut: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#ff0077" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-pink"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`,
             Star: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
-            Image: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`,
-            Lock: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
+            Image: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-cyan"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`,
+            Lock: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-cyan"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
             Heart: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-pink-500"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
             ChevronLeft: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`,
             ChevronRight: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
-            Download: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
-            Trash: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
-            Bell: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`
+            Download: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#ff0077" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-pink"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+            Trash: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#ff0077" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-pink"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+            Bell: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-cyan"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`
         };
 
         // Helper function to extract the Storage file path from the full public URL
@@ -229,7 +307,33 @@
                 this.state.showLogin = false;
                 
                 this.render();
+                // NEW: Trigger sparkle effect on successful login
+                this.triggerSparkleEffect(); 
             }
+            
+            // NEW: Sparkle Effect function
+            triggerSparkleEffect() {
+                const nav = document.querySelector('nav');
+                if (!nav) return;
+
+                for (let i = 0; i < 20; i++) {
+                    const sparkle = document.createElement('div');
+                    sparkle.className = 'login-sparkle';
+                    
+                    // Random positions near the CSH Gallery title
+                    const x = Math.random() * 200 - 100; // -100 to 100
+                    const y = Math.random() * 50 - 25; // -25 to 25
+                    
+                    sparkle.style.left = `${nav.querySelector('h1').offsetLeft + nav.querySelector('h1').offsetWidth / 2 + x}px`;
+                    sparkle.style.top = `${nav.querySelector('h1').offsetTop + nav.querySelector('h1').offsetHeight / 2 + y}px`;
+                    sparkle.style.animationDelay = `${Math.random() * 0.5}s`;
+                    nav.appendChild(sparkle);
+                    
+                    // Remove sparkle after animation
+                    setTimeout(() => nav.removeChild(sparkle), 1000);
+                }
+            }
+            // --- END NEW FUNCTION ---
 
             handleLogout() {
                 this.state.isLoggedIn = false;
@@ -645,59 +749,59 @@
                     <div class="max-w-4xl mx-auto py-8">
                         <div class="flex items-center gap-4 mb-8">
                             ${icons.Bell(36)}
-                            <h2 class="text-4xl font-extrabold text-gray-800 tracking-tight">Community Notices</h2>
+                            <h2 class="text-4xl font-extrabold neon-text-cyan tracking-tight">System Logs // Notices</h2>
                         </div>
                         
                         ${isNoticesAdmin ? `
-                            <div class="bg-white rounded-2xl p-6 shadow-xl mb-10 border-4 border-indigo-200/50">
-                                <h3 class="text-xl font-bold text-indigo-700 mb-4 flex items-center">
-                                    Post New Notice 
+                            <div class="tech-box-bg rounded-2xl p-6 shadow-2xl mb-10 border-4 border-[#00f2ff]/50 animate-pulse-shadow">
+                                <h3 class="text-xl font-bold text-[#00f2ff] mb-4 flex items-center">
+                                    [ADMIN] Post New Notice 
                                     <span class="ml-auto text-sm font-medium text-gray-500">
                                         Limit: ${this.state.notices.length}/10
                                     </span>
                                 </h3>
-                                <textarea id="noticeContentInput" class="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/50 transition resize-none" rows="4" placeholder="Type your important announcement here..."></textarea>
+                                <textarea id="noticeContentInput" class="w-full p-4 border border-gray-700 bg-gray-800 text-white rounded-xl focus:outline-none focus:ring-4 focus:ring-[#00f2ff]/50 transition resize-none" rows="4" placeholder="Type your important announcement here..."></textarea>
                                 <div class="flex justify-between items-center mt-4">
                                     <p class="text-sm text-gray-500">Posting as: ${this.state.userEmail}</p>
-                                    <button id="postNoticeBtn" class="admin-gradient text-white px-8 py-3 rounded-xl font-bold hover:opacity-90 transition shadow-lg">
-                                        Post Announcement
+                                    <button id="postNoticeBtn" class="admin-gradient text-white px-8 py-3 rounded-xl font-bold hover:opacity-90 transition shadow-lg transform hover:scale-[1.05] duration-300">
+                                        EXECUTE POST
                                     </button>
                                 </div>
                             </div>
                         ` : ''}
 
                         ${this.state.notices.length === 0 ? `
-                            <div class="text-center py-16 bg-white rounded-2xl shadow-xl border-2 border-gray-200">
-                                <p class="text-gray-600 text-xl font-medium">No announcements yet. Check back soon!</p>
+                            <div class="text-center py-16 tech-box-bg rounded-2xl shadow-xl tech-border border-[#ff0077]">
+                                <p class="text-[#ff0077] text-xl font-medium">No system logs. All clear. (Check back soon!)</p>
                             </div>
                         ` : `
                             <div class="space-y-6">
                                 ${this.state.notices.map((notice, index) => {
                                     const isTop = index === 0;
-                                    const bgColor = isTop ? 'bg-indigo-600 text-white shadow-2xl ring-4 ring-indigo-300/50' : 'bg-white text-gray-800 shadow-lg border border-gray-200 hover:shadow-xl';
-                                    const headerColor = isTop ? 'text-indigo-200' : 'text-indigo-600';
+                                    // NEW: Applying gaming colors
+                                    const bgColor = isTop ? 'bg-[#00f2ff]/20 text-white shadow-2xl ring-4 ring-[#00f2ff]/50' : 'bg-[#1a1b26] text-white shadow-lg tech-border hover:shadow-xl';
+                                    const headerColor = isTop ? 'text-[#00f2ff]' : 'text-[#ff0077]';
                                     
-                                    // NEW, safer block for BigInt timestamps:
-                                    const dateObj = new Date(Number(notice.timestamp)); // Convert the BigInt/Number to a Date object
+                                    const dateObj = new Date(Number(notice.timestamp)); 
                                     const timestamp = dateObj.toLocaleDateString('en-US', {
                                         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                                     });
 
                                     return `
-                                        <div class="p-6 rounded-2xl ${bgColor} transition duration-300">
+                                        <div class="p-6 rounded-2xl ${bgColor} transition duration-300 transform hover:scale-[1.01]">
                                             <div class="flex items-start justify-between mb-3">
                                                 <p class="text-sm font-extrabold ${headerColor} tracking-widest uppercase flex items-center gap-2">
-                                                    ${isTop ? '✨ LATEST ANNOUNCEMENT' : 'COMMUNITY UPDATE'}
+                                                    ${isTop ? '⚡ ACTIVE EVENT LOG' : 'SYSTEM UPDATE'}
                                                 </p>
-                                                <p class="text-xs ${isTop ? 'text-indigo-200' : 'text-gray-500'} font-medium">${timestamp}</p>
+                                                <p class="text-xs text-gray-400 font-medium">${timestamp}</p>
                                             </div>
                                             <p class="text-xl font-bold whitespace-pre-wrap leading-relaxed">${notice.content}</p>
                                             
-                                            <div class="flex items-center justify-between mt-4 border-t ${isTop ? 'border-indigo-500/50' : 'border-gray-200'} pt-3">
-                                                <span class="text-sm ${isTop ? 'text-indigo-300' : 'text-gray-500'}">Posted by: ${notice.uploadedBy}</span>
+                                            <div class="flex items-center justify-between mt-4 border-t border-gray-700 pt-3">
+                                                <span class="text-sm text-gray-500">Source: ${notice.uploadedBy}</span>
                                                 ${isNoticesAdmin ? `
-                                                    <button data-delete-notice="${notice.id}" class="flex items-center gap-1 bg-red-600 text-white px-3 py-1.5 text-xs rounded-xl font-semibold hover:bg-red-700 transition shadow-md">
-                                                        ${icons.Trash(14)} Delete
+                                                    <button data-delete-notice="${notice.id}" class="flex items-center gap-1 bg-red-700 text-white px-3 py-1.5 text-xs rounded-xl font-semibold hover:bg-red-800 transition shadow-md">
+                                                        ${icons.Trash(14)} DELETE
                                                     </button>
                                                 ` : ''}
                                             </div>
@@ -720,53 +824,56 @@
                     ? { hall: this.state.hallOfFameMemes, regular: this.state.memes, type: 'meme', color: 'purple' }
                     : { hall: this.state.hallOfFameMemories, regular: this.state.memories, type: 'memory', color: 'pink' };
 
-                const tabColor = isMemeTab ? 'border-purple-600 text-purple-600' : 'border-pink-600 text-pink-600';
-                const tabColorHover = isMemeTab ? 'hover:text-purple-600' : 'hover:text-pink-600';
+                // NEW: Gaming Tab Colors
+                const memeTabClass = 'border-[#ff0077] text-[#ff0077]';
+                const memoryTabClass = 'border-[#00f2ff] text-[#00f2ff]';
+                const tabColor = isMemeTab ? memeTabClass : memoryTabClass;
+                const tabColorHover = isMemeTab ? 'hover:text-[#ff0077]' : 'hover:text-[#00f2ff]';
 
                 return `
-                    <div class="min-h-screen bg-slate-50">
-                        <nav class="bg-white shadow-lg sticky top-0 z-20">
+                    <div class="min-h-screen">
+                        <nav class="bg-[#1a1b26] shadow-2xl shadow-gray-900/50 sticky top-0 z-20 tech-border">
                             <div class="max-w-7xl mx-auto px-4 py-4">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-4">
-                                        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tighter">CSH Gallery</h1>
-                                        <p class="text-sm text-gray-500 border-l pl-3">${this.state.isLoggedIn ? 'Access Granted' : 'Public View'}</p>
+                                        <h1 class="text-4xl font-extrabold neon-text-cyan tracking-widest">CSH_ARCADE</h1>
+                                        <p class="text-sm text-gray-500 border-l border-gray-700 pl-3">${this.state.isLoggedIn ? 'User: ONLINE' : 'User: GUEST'}</p>
                                     </div>
                                     <div class="flex items-center gap-4">
                                         ${this.state.isAdmin ? `
-                                            <button id="wipeAndArchiveBtn" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition text-sm font-semibold shadow-md">
+                                            <button id="wipeAndArchiveBtn" class="flex items-center gap-2 bg-red-700 text-white px-4 py-2 rounded-xl hover:bg-red-800 transition text-sm font-bold shadow-md transform hover:scale-[1.05]">
                                                 ${icons.Download(16)} ${icons.Trash(16)}
-                                                Archive & Wipe
+                                                [ADMIN] WIPE DATA
                                             </button>
                                         ` : ''}
                                         ${!this.state.isLoggedIn ? `
-                                            <button id="showLoginBtn" class="flex items-center gap-2 admin-gradient text-white px-4 py-2 rounded-xl hover:opacity-90 transition text-sm font-semibold shadow-md">
+                                            <button id="showLoginBtn" class="flex items-center gap-2 admin-gradient text-white px-4 py-2 rounded-xl hover:opacity-90 transition text-sm font-bold shadow-lg animate-pulse-shadow">
                                                 ${icons.Lock(16)}
-                                                Admin Login
+                                                ACCESS PORTAL
                                             </button>
                                         ` : `
                                             <div class="flex items-center gap-3">
-                                                ${this.state.isAdmin ? '<span class="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm">FULL ADMIN</span>' : this.state.isNoticesAdmin ? '<span class="bg-indigo-400 text-indigo-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm">NOTICE ADMIN</span>' : ''}
-                                                <span class="text-sm text-gray-600 font-medium">${this.state.userEmail}</span>
-                                                <button id="logoutBtn" class="flex items-center gap-2 bg-slate-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-slate-300 transition text-sm font-semibold">
+                                                ${this.state.isAdmin ? '<span class="bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-yellow-200">SYS_ROOT</span>' : this.state.isNoticesAdmin ? '<span class="bg-[#00f2ff]/30 text-[#00f2ff] px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-[#00f2ff]">LOG_MASTER</span>' : ''}
+                                                <span class="text-sm text-gray-400 font-medium">${this.state.userEmail}</span>
+                                                <button id="logoutBtn" class="flex items-center gap-2 bg-gray-800 text-gray-300 px-4 py-2 rounded-xl hover:bg-gray-700 transition text-sm font-bold border border-gray-700">
                                                     ${icons.LogOut(16)}
-                                                    Logout
+                                                    LOGOUT
                                                 </button>
                                             </div>
                                         `}
                                     </div>
                                 </div>
                                 
-                                <div class="flex gap-1">
-                                    <button data-tab="notices" class="${isNoticesTab ? 'border-b-4 border-indigo-600 text-indigo-700' : 'text-gray-500 hover:text-indigo-600'} px-6 py-3 font-extrabold transition flex items-center text-lg">
+                                <div class="flex gap-1 border-t border-gray-700 pt-3">
+                                    <button data-tab="notices" class="${isNoticesTab ? 'border-b-4 border-[#00f2ff] text-[#00f2ff]' : 'text-gray-500 hover:text-[#00f2ff]'} px-6 py-3 font-extrabold transition flex items-center text-lg">
                                         ${icons.Bell(20)}
-                                        <span class="ml-2">Notices</span>
+                                        <span class="ml-2">STATUS</span>
                                     </button>
-                                    <button data-tab="memes" class="${isMemeTab ? `border-b-4 ${tabColor}` : `text-gray-500 ${tabColorHover}`} px-6 py-3 font-extrabold transition text-lg">
-                                        Memes
+                                    <button data-tab="memes" class="${isMemeTab ? `border-b-4 ${memeTabClass}` : `text-gray-500 ${tabColorHover}`} px-6 py-3 font-extrabold transition text-lg">
+                                        MEME.EXE
                                     </button>
-                                    <button data-tab="memories" class="${isMemoryTab ? `border-b-4 ${tabColor}` : `text-gray-500 ${tabColorHover}`} px-6 py-3 font-extrabold transition text-lg">
-                                        Memories
+                                    <button data-tab="memories" class="${isMemoryTab ? `border-b-4 ${memoryTabClass}` : `text-gray-500 ${tabColorHover}`} px-6 py-3 font-extrabold transition text-lg">
+                                        MEMORIES.DAT
                                     </button>
                                 </div>
                             </div>
@@ -779,57 +886,57 @@
                                 <div class="mb-16">
                                     <div class="flex items-center gap-3 mb-6">
                                         ${isMemeTab ? icons.Star(36) : icons.Heart(36)}
-                                        <h2 class="text-3xl font-extrabold text-gray-800 tracking-tight">Hall of Fame</h2>
-                                        <span class="text-sm text-gray-500 ml-auto">${isMemeTab ? 'The funniest memes ever.' : 'Memories that warm the heart.'}</span>
+                                        <h2 class="text-3xl font-extrabold ${isMemeTab ? 'neon-text-pink' : 'neon-text-cyan'} tracking-tight">HALL OF GLORY // ARCHIVES</h2>
+                                        <span class="text-sm text-gray-500 ml-auto">${isMemeTab ? 'High Score Memes' : 'Legendary Memories'}</span>
                                     </div>
                                     ${this.state.loading ? `
-                                        <div class="text-center py-12 bg-white rounded-2xl shadow-lg"><p class="text-gray-600">Loading...</p></div>
+                                        <div class="text-center py-12 tech-box-bg rounded-2xl shadow-lg"><p class="text-gray-400">Loading Data...</p></div>
                                     ` : this.renderScrollingHallOfFame(currentData.hall, currentData.type)}
                                 </div>
 
                                 ${this.state.uploadStatus ? `
-                                    <div class="bg-indigo-100 border-l-4 border-indigo-500 text-indigo-800 p-4 mb-10 rounded-lg shadow-md" role="alert">
-                                        <p class="font-bold">Gallery Status</p>
-                                        <p>${this.state.uploadStatus}</p>
+                                    <div class="bg-[#00f2ff]/20 border-l-4 border-[#00f2ff] text-white p-4 mb-10 rounded-lg shadow-md font-bold" role="alert">
+                                        <p class="text-[#00f2ff]">// OPERATION STATUS</p>
+                                        <p class="text-sm">${this.state.uploadStatus}</p>
                                     </div>
                                 ` : ''}
 
                                 ${this.state.isLoggedIn ? `
                                     
-                                    <div class="mb-12 bg-white rounded-2xl p-8 shadow-xl border-4 ${isMemeTab ? 'border-purple-200/50' : 'border-pink-200/50'}">
-                                        <h2 class="text-2xl font-bold text-gray-800 mb-5">Share Your ${isMemeTab ? 'Meme' : 'Memory'}</h2>
-                                        <label class="flex items-center justify-center gap-3 upload-gradient text-white px-8 py-4 rounded-xl cursor-pointer transition font-extrabold text-lg hover:shadow-2xl hover:scale-[1.01] transform duration-300 shadow-xl">
+                                    <div class="mb-12 tech-box-bg rounded-2xl p-8 shadow-2xl border-4 ${isMemeTab ? 'border-[#ff0077]/50' : 'border-[#00f2ff]/50'} tech-border transform hover:scale-[1.005] transition duration-300">
+                                        <h2 class="text-2xl font-bold text-white mb-5">// UPLOAD_MODULE: Share Your ${isMemeTab ? 'Meme' : 'Memory'}</h2>
+                                        <label class="flex items-center justify-center gap-3 upload-gradient text-white px-8 py-4 rounded-xl cursor-pointer transition font-extrabold text-lg hover:shadow-2xl hover:scale-[1.01] transform duration-300 shadow-xl border border-[#aa00ff] neon-text-pink">
                                             ${icons.Upload(24)}
-                                            Choose ${isMemeTab ? 'Meme' : 'Memory'} File (Max 5MB)
+                                            INPUT FILE (Max 5MB)
                                             <input id="fileInput" type="file" accept="image/*" class="hidden">
                                         </label>
-                                        <p class="text-sm text-gray-500 mt-3 text-center">Uploading as: ${this.state.userEmail}</p>
+                                        <p class="text-sm text-gray-500 mt-3 text-center">Authentication: ${this.state.userEmail}</p>
                                     </div>
 
                                     <div>
-                                        <h2 class="text-3xl font-extrabold text-gray-800 mb-8 border-b pb-4">Latest ${isMemeTab ? 'Memes' : 'Memories'}</h2>
+                                        <h2 class="text-3xl font-extrabold text-white mb-8 border-b border-gray-700 pb-4">// LIVE FEED: Latest ${isMemeTab ? 'Memes' : 'Memories'}</h2>
                                         ${currentData.regular.length === 0 ? `
-                                            <div class="text-center py-20 bg-white rounded-2xl shadow-lg border-2 border-gray-200">
+                                            <div class="text-center py-20 tech-box-bg rounded-2xl shadow-lg border-2 border-gray-700">
                                                 ${icons.Image(72)}
-                                                <p class="text-gray-600 text-xl font-medium mt-4">No ${this.state.currentTab} yet. Be the first to upload!</p>
+                                                <p class="text-gray-500 text-xl font-medium mt-4">Feed Empty. Upload required to begin broadcast.</p>
                                             </div>
                                         ` : `
-                                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                                                 ${currentData.regular.map(item => `
-                                                    <div class="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition transform hover:-translate-y-1 relative group">
-                                                        <div class="aspect-square bg-gray-100 flex items-center justify-center">
-                                                            <img src="${item.imageUrl}" alt="${currentData.type}" class="w-full h-full object-contain">
+                                                    <div class="tech-box-bg rounded-xl overflow-hidden shadow-2xl shadow-gray-900/50 hover:shadow-[0_0_20px_#ff0077] transition transform hover:-translate-y-1 relative group border border-gray-700">
+                                                        <div class="aspect-square bg-gray-900 flex items-center justify-center">
+                                                            <img src="${item.imageUrl}" alt="${currentData.type}" class="w-full h-full object-contain p-2">
                                                         </div>
-                                                        <div class="p-4">
-                                                            <p class="text-sm text-gray-700">By: <span class="font-bold">${item.uploadedBy}</span></p>
-                                                            <p class="text-xs text-gray-500 mt-1">${new Date(item.timestamp).toLocaleDateString()}</p>
+                                                        <div class="p-3">
+                                                            <p class="text-xs text-gray-400">USER: <span class="font-bold text-[#00f2ff]">${item.uploadedBy.split('@')[0]}</span></p>
+                                                            <p class="text-xs text-gray-600 mt-1">${new Date(item.timestamp).toLocaleDateString()}</p>
                                                         </div>
                                                         ${this.state.isAdmin ? `
                                                             <div class="absolute top-2 right-2 flex gap-2">
-                                                                <button data-promote="${item.id}" data-type="${currentData.type}" class="bg-white text-gray-700 p-2 rounded-full text-xs flex items-center justify-center shadow-lg hover:scale-110 transition hover:text-black hover:bg-yellow-200/80">
+                                                                <button data-promote="${item.id}" data-type="${currentData.type}" class="bg-gray-800 text-yellow-400 p-2 rounded-full text-xs flex items-center justify-center shadow-lg hover:scale-110 transition hover:text-white hover:bg-[#ff0077]">
                                                                     ${isMemeTab ? icons.Star(18) : icons.Heart(18)}
                                                                 </button>
-                                                                <button data-delete-item="${item.id}" data-type="${currentData.type}" class="bg-red-600 text-white p-2 rounded-full text-xs shadow-lg hover:bg-red-700 hover:scale-110 transition">
+                                                                <button data-delete-item="${item.id}" data-type="${currentData.type}" class="bg-red-700 text-white p-2 rounded-full text-xs shadow-lg hover:bg-red-800 hover:scale-110 transition">
                                                                     ${icons.Trash(18)}
                                                                 </button>
                                                             </div>
@@ -840,13 +947,13 @@
                                         `}
                                     </div>
                                 ` : `
-                                    <div class="text-center py-20 bg-white rounded-2xl shadow-xl border-4 border-gray-300/50">
+                                    <div class="text-center py-20 tech-box-bg rounded-2xl shadow-2xl border-4 border-[#00f2ff]/50">
                                         ${icons.Lock(64)}
-                                        <h3 class="text-3xl font-bold text-gray-700 mt-6">Login Required</h3>
-                                        <p class="text-gray-500 mt-3 text-lg">Please log in to view the full gallery and upload content.</p>
-                                        <button id="showLoginBtn_gated" class="mt-8 flex items-center gap-2 admin-gradient text-white px-8 py-3 rounded-xl hover:opacity-90 transition text-lg font-semibold mx-auto shadow-lg">
+                                        <h3 class="text-3xl font-bold neon-text-cyan mt-6">ACCESS DENIED: LOGIN REQUIRED</h3>
+                                        <p class="text-gray-500 mt-3 text-lg">Please use the Access Portal to view the content feed.</p>
+                                        <button id="showLoginBtn_gated" class="mt-8 flex items-center gap-2 upload-gradient text-white px-8 py-3 rounded-xl hover:opacity-90 transition text-lg font-bold mx-auto shadow-lg transform hover:scale-[1.05]">
                                             ${icons.Lock(20)}
-                                            Login Now
+                                            ACCESS PORTAL NOW
                                         </button>
                                     </div>
                                 `}
@@ -858,30 +965,30 @@
 
             renderLoginModal() {
                  return `
-                    <div class="fixed inset-0 bg-gray-900 bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50">
-                        <div class="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md relative transform transition-all scale-100 duration-300">
-                            <button id="closeLogin" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-3xl transition">×</button>
+                    <div class="fixed inset-0 bg-gray-900 bg-opacity-95 backdrop-blur-md flex items-center justify-center z-50">
+                        <div class="bg-[#1a1b26] rounded-3xl shadow-2xl shadow-cyan-500/50 p-10 w-full max-w-md relative transform transition-all scale-100 duration-300 tech-border border-[#00f2ff] animate-pulse-shadow">
+                            <button id="closeLogin" class="absolute top-5 right-5 text-gray-400 hover:text-[#00f2ff] text-3xl transition">×</button>
                             
                             <div class="text-center mb-10">
-                                <h1 class="text-4xl font-extrabold text-gray-800 mb-2">CSH Login</h1>
-                                <p class="text-gray-500 text-lg">Use your official BT25CSH credentials.</p>
+                                <h1 class="text-4xl font-extrabold neon-text-cyan mb-2 tracking-widest">LOGIN_INTERFACE</h1>
+                                <p class="text-gray-500 text-lg">Input BT25CSH Credentials.</p>
                             </div>
 
                             <form id="loginForm" class="space-y-6">
                                 <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-2">Email</label>
-                                    <input id="emailInput" type="email" value="${this.state.email}" placeholder="bt25cshXXX@iiitn.ac.in" class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:outline-none focus:ring-4 focus:ring-indigo-500/50 transition">
+                                    <label class="block text-sm font-bold text-[#00f2ff] mb-2">// EMAIL_ID</label>
+                                    <input id="emailInput" type="email" value="${this.state.email}" placeholder="bt25cshXXX@iiitn.ac.in" class="w-full px-4 py-3 rounded-xl border-2 border-gray-700 bg-gray-800 text-white focus:outline-none focus:ring-4 focus:ring-[#ff0077]/50 transition">
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-2">Password</label>
-                                    <input id="passwordInput" type="password" value="${this.state.password}" class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:outline-none focus:ring-4 focus:ring-indigo-500/50 transition">
+                                    <label class="block text-sm font-bold text-[#00f2ff] mb-2">// PASSWORD</label>
+                                    <input id="passwordInput" type="password" value="${this.state.password}" class="w-full px-4 py-3 rounded-xl border-2 border-gray-700 bg-gray-800 text-white focus:outline-none focus:ring-4 focus:ring-[#ff0077]/50 transition">
                                 </div>
 
-                                ${this.state.error ? `<div class="bg-red-100 text-red-700 p-4 rounded-xl text-sm font-medium border border-red-200">${this.state.error}</div>` : ''}
+                                ${this.state.error ? `<div class="bg-red-800/50 text-red-400 p-4 rounded-xl text-sm font-bold border border-red-700">${this.state.error}</div>` : ''}
 
-                                <button id="loginBtn" class="w-full admin-gradient text-white py-3.5 rounded-xl font-bold text-lg hover:opacity-90 transition shadow-lg" type="submit">
-                                    Sign In
+                                <button id="loginBtn" class="w-full upload-gradient text-white py-3.5 rounded-xl font-bold text-lg hover:opacity-90 transition shadow-lg transform hover:scale-[1.02]" type="submit">
+                                    START SESSION
                                 </button>
                             </form>
                         </div>
@@ -891,37 +998,38 @@
 
             renderScrollingHallOfFame(items, type) {
                  if (items.length === 0) {
+                    const colorClass = type === 'memory' ? 'neon-text-cyan' : 'neon-text-pink';
                     return `
-                        <div class="text-center py-16 bg-white rounded-2xl shadow-xl border-4 ${type === 'memory' ? 'border-pink-300/50' : 'border-yellow-300/50'}">
+                        <div class="text-center py-16 tech-box-bg rounded-2xl shadow-xl border-4 ${type === 'memory' ? 'border-[#00f2ff]/50' : 'border-[#ff0077]/50'}">
                             ${type === 'memory' ? icons.Heart(64) : icons.Star(64)}
-                            <p class="text-gray-700 text-xl font-medium mt-4">No Hall of Fame ${type === 'memory' ? 'Memories' : 'Memes'} yet!</p>
-                            ${this.state.isAdmin ? '<p class="text-sm text-gray-500 mt-2">Promote an item from the gallery below.</p>' : ''}
+                            <p class="text-gray-400 text-xl font-medium mt-4">ARCHIVES: EMPTY SLOT</p>
+                            ${this.state.isAdmin ? '<p class="text-sm text-gray-600 mt-2">Promote an item to fill the slot.</p>' : ''}
                         </div>
                     `;
                 }
 
                 const containerId = type === 'memory' ? 'memory-scroll-container' : 'meme-scroll-container';
-                const borderColor = type === 'memory' ? 'border-pink-400' : 'border-yellow-400';
-                const bgGradient = type === 'memory' ? 'from-pink-100 to-purple-100' : 'from-yellow-100 to-orange-100';
+                const borderColor = type === 'memory' ? '#00f2ff' : '#ff0077';
+                const bgGradient = type === 'memory' ? 'from-[#0b0c10] to-[#00f2ff]/10' : 'from-[#0b0c10] to-[#ff0077]/10';
 
                 return `
                     <div class="relative max-w-7xl mx-auto">
-                        <div id="${containerId}" class="scroll-container overflow-x-scroll snap-x snap-mandatory relative rounded-2xl shadow-xl">
+                        <div id="${containerId}" class="scroll-container overflow-x-scroll snap-x snap-mandatory relative rounded-2xl shadow-2xl shadow-gray-900/80">
                             <div class="flex">
                                 ${items.map(item => `
                                     <div class="snap-start snap-full px-2 py-1">
-                                        <div class="bg-white rounded-2xl overflow-hidden shadow-2xl border-4 ${borderColor} relative mx-auto">
-                                            <div class="aspect-[16/9] bg-gray-100 flex items-center justify-center">
-                                                <img src="${item.imageUrl}" alt="Hall of Fame" class="w-full h-full object-contain">
+                                        <div class="bg-[#1a1b26] rounded-2xl overflow-hidden shadow-2xl hof-card relative mx-auto">
+                                            <div class="aspect-[16/9] bg-gray-900 flex items-center justify-center">
+                                                <img src="${item.imageUrl}" alt="Hall of Fame" class="w-full h-full object-contain p-4">
                                             </div>
-                                            <div class="p-5 flex items-center justify-between bg-gradient-to-r ${type === 'meme' ? 'from-yellow-50 to-orange-50' : 'from-pink-50 to-purple-50'}">
+                                            <div class="p-5 flex items-center justify-between bg-gradient-to-r ${bgGradient}">
                                                 <div>
-                                                    <p class="text-xl font-bold text-gray-800">${type === 'meme' ? 'Hall of Fame Meme' : 'Golden Memory'}</p>
-                                                    <p class="text-sm text-gray-600">By: <span class="font-semibold">${item.uploadedBy}</span> (${new Date(item.timestamp).toLocaleDateString()})</p>
+                                                    <p class="text-xl font-bold text-white">${type === 'meme' ? 'HIGH SCORE MEME' : 'GOLDEN MEMORY'}</p>
+                                                    <p class="text-sm text-gray-400">UPLOADER: <span class="font-semibold text-[#00f2ff]">${item.uploadedBy.split('@')[0]}</span> (${new Date(item.timestamp).toLocaleDateString()})</p>
                                                 </div>
                                                 ${this.state.isAdmin ? `
-                                                    <button data-remove-hof="${item.id}" data-type="${type}" class="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-red-600 shadow-md transition">
-                                                        Remove
+                                                    <button data-remove-hof="${item.id}" data-type="${type}" class="bg-red-700 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-red-800 shadow-md transition transform hover:scale-[1.05]">
+                                                        REMOVE
                                                     </button>
                                                 ` : ''}
                                             </div>
@@ -931,10 +1039,10 @@
                             </div>
                         </div>
                         ${items.length > 1 ? `
-                            <button data-scroll="${type}" data-direction="prev" class="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-100 rounded-full p-2.5 shadow-xl z-10 text-gray-700 hover:text-gray-900 transition ml-2">
+                            <button data-scroll="${type}" data-direction="prev" class="absolute left-0 top-1/2 transform -translate-y-1/2 bg-[#1a1b26] bg-opacity-80 hover:bg-opacity-100 rounded-full p-2.5 shadow-xl z-10 text-[#00f2ff] hover:text-white transition ml-2 border border-[#00f2ff]">
                                 ${icons.ChevronLeft(36)}
                             </button>
-                            <button data-scroll="${type}" data-direction="next" class="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-100 rounded-full p-2.5 shadow-xl z-10 text-gray-700 hover:text-gray-900 transition mr-2">
+                            <button data-scroll="${type}" data-direction="next" class="absolute right-0 top-1/2 transform -translate-y-1/2 bg-[#1a1b26] bg-opacity-80 hover:bg-opacity-100 rounded-full p-2.5 shadow-xl z-10 text-[#00f2ff] hover:text-white transition mr-2 border border-[#00f2ff]">
                                 ${icons.ChevronRight(36)}
                             </button>
                         ` : ''}
