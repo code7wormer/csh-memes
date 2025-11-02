@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
+        .scroll-container { scroll-behavior: smooth; }
     </style>
 </head>
 <body>
@@ -38,7 +39,10 @@
             LogOut: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`,
             Star: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
             Image: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`,
-            Lock: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
+            Lock: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
+            Heart: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
+            ChevronLeft: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`,
+            ChevronRight: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`
         };
 
         // Compress image before uploading
@@ -52,7 +56,6 @@
                         let width = img.width;
                         let height = img.height;
                         
-                        // Resize if too large
                         const maxDimension = 1200;
                         if (width > maxDimension || height > maxDimension) {
                             if (width > height) {
@@ -69,7 +72,6 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
                         
-                        // Convert to base64 with compression
                         resolve(canvas.toDataURL('image/jpeg', 0.7));
                     };
                     img.onerror = reject;
@@ -88,22 +90,30 @@
                     userEmail: '',
                     email: '',
                     password: '',
+                    currentTab: 'memes',
                     hallOfFameMemes: [],
+                    hallOfFameMemories: [],
                     memes: [],
+                    memories: [],
                     showLogin: false,
                     loading: true,
                     error: '',
                     uploadStatus: '',
-                    firebaseReady: false
+                    firebaseReady: false,
+                    memeScrollIndex: 0,
+                    memoryScrollIndex: 0
                 };
+                this.memeScrollInterval = null;
+                this.memoryScrollInterval = null;
                 this.init();
             }
 
             async init() {
                 await this.authenticateAnonymously();
-                await this.loadHallOfFame();
+                await this.loadAllData();
                 this.render();
                 this.setupRealtimeListeners();
+                this.startAutoScroll();
             }
 
             async authenticateAnonymously() {
@@ -116,52 +126,86 @@
             }
 
             setupRealtimeListeners() {
-                // Real-time Hall of Fame updates
-                const hofQuery = query(collection(db, 'hall-of-fame'), orderBy('timestamp', 'desc'));
-                onSnapshot(hofQuery, (snapshot) => {
-                    this.state.hallOfFameMemes = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
+                onSnapshot(query(collection(db, 'hall-of-fame-memes'), orderBy('timestamp', 'desc')), (snapshot) => {
+                    this.state.hallOfFameMemes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     this.state.loading = false;
                     this.render();
                 });
 
-                // Real-time regular memes updates
-                const memesQuery = query(collection(db, 'memes'), orderBy('timestamp', 'desc'));
-                onSnapshot(memesQuery, (snapshot) => {
-                    this.state.memes = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
+                onSnapshot(query(collection(db, 'hall-of-fame-memories'), orderBy('timestamp', 'desc')), (snapshot) => {
+                    this.state.hallOfFameMemories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    this.render();
+                });
+
+                onSnapshot(query(collection(db, 'memes'), orderBy('timestamp', 'desc')), (snapshot) => {
+                    this.state.memes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    this.render();
+                });
+
+                onSnapshot(query(collection(db, 'memories'), orderBy('timestamp', 'desc')), (snapshot) => {
+                    this.state.memories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     this.render();
                 });
             }
 
-            async loadHallOfFame() {
+            async loadAllData() {
                 try {
-                    const q = query(collection(db, 'hall-of-fame'), orderBy('timestamp', 'desc'));
-                    const snapshot = await getDocs(q);
-                    this.state.hallOfFameMemes = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
+                    const [hofMemes, hofMemories, memes, memories] = await Promise.all([
+                        getDocs(query(collection(db, 'hall-of-fame-memes'), orderBy('timestamp', 'desc'))),
+                        getDocs(query(collection(db, 'hall-of-fame-memories'), orderBy('timestamp', 'desc'))),
+                        getDocs(query(collection(db, 'memes'), orderBy('timestamp', 'desc'))),
+                        getDocs(query(collection(db, 'memories'), orderBy('timestamp', 'desc')))
+                    ]);
+                    
+                    this.state.hallOfFameMemes = hofMemes.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    this.state.hallOfFameMemories = hofMemories.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    this.state.memes = memes.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    this.state.memories = memories.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 } catch (err) {
-                    console.log('No hall of fame memes yet');
+                    console.log('Error loading data:', err);
                 }
                 this.state.loading = false;
             }
 
-            async loadAllMemes() {
-                try {
-                    const q = query(collection(db, 'memes'), orderBy('timestamp', 'desc'));
-                    const snapshot = await getDocs(q);
-                    this.state.memes = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-                } catch (err) {
-                    console.log('No memes yet');
+            startAutoScroll() {
+                this.memeScrollInterval = setInterval(() => {
+                    if (this.state.hallOfFameMemes.length > 1) {
+                        this.scrollMemes('next');
+                    }
+                }, 5000);
+
+                this.memoryScrollInterval = setInterval(() => {
+                    if (this.state.hallOfFameMemories.length > 1) {
+                        this.scrollMemories('next');
+                    }
+                }, 5000);
+            }
+
+            scrollMemes(direction) {
+                const maxIndex = Math.max(0, this.state.hallOfFameMemes.length - 1);
+                if (direction === 'next') {
+                    this.state.memeScrollIndex = (this.state.memeScrollIndex + 1) % this.state.hallOfFameMemes.length;
+                } else {
+                    this.state.memeScrollIndex = this.state.memeScrollIndex === 0 ? maxIndex : this.state.memeScrollIndex - 1;
+                }
+                const container = document.getElementById('meme-scroll-container');
+                if (container) {
+                    const width = container.offsetWidth;
+                    container.scrollTo({ left: width * this.state.memeScrollIndex, behavior: 'smooth' });
+                }
+            }
+
+            scrollMemories(direction) {
+                const maxIndex = Math.max(0, this.state.hallOfFameMemories.length - 1);
+                if (direction === 'next') {
+                    this.state.memoryScrollIndex = (this.state.memoryScrollIndex + 1) % this.state.hallOfFameMemories.length;
+                } else {
+                    this.state.memoryScrollIndex = this.state.memoryScrollIndex === 0 ? maxIndex : this.state.memoryScrollIndex - 1;
+                }
+                const container = document.getElementById('memory-scroll-container');
+                if (container) {
+                    const width = container.offsetWidth;
+                    container.scrollTo({ left: width * this.state.memoryScrollIndex, behavior: 'smooth' });
                 }
             }
 
@@ -177,13 +221,11 @@
                     this.state.isAdmin = true;
                     this.state.userEmail = emailLower;
                     this.state.showLogin = false;
-                    this.loadAllMemes();
                 } else if (emailRegex.test(emailLower) && this.state.password === 'cshthegoat') {
                     this.state.isLoggedIn = true;
                     this.state.isAdmin = false;
                     this.state.userEmail = emailLower;
                     this.state.showLogin = false;
-                    this.loadAllMemes();
                 } else {
                     this.state.error = 'Invalid credentials. Check your email format and password.';
                 }
@@ -196,11 +238,10 @@
                 this.state.userEmail = '';
                 this.state.email = '';
                 this.state.password = '';
-                this.state.memes = [];
                 this.render();
             }
 
-            async handleFileUpload(file) {
+            async handleFileUpload(file, type) {
                 if (!file) return;
 
                 if (!file.type.startsWith('image/')) {
@@ -219,27 +260,25 @@
                 this.render();
 
                 try {
-                    // Compress image to base64
                     const compressedImage = await compressImage(file);
-
-                    // Check if compressed image is still reasonable size
                     const sizeInBytes = (compressedImage.length * 3) / 4;
-                    if (sizeInBytes > 1000000) { // ~1MB limit for Firestore
+                    if (sizeInBytes > 1000000) {
                         this.state.uploadStatus = 'Image too large after compression. Try a smaller image.';
                         this.render();
                         return;
                     }
 
                     const timestamp = Date.now();
+                    const collectionName = type === 'memory' ? 'memories' : 'memes';
 
-                    await addDoc(collection(db, 'memes'), {
+                    await addDoc(collection(db, collectionName), {
                         imageData: compressedImage,
                         uploadedBy: this.state.userEmail,
                         timestamp: timestamp,
                         fileName: file.name
                     });
 
-                    this.state.uploadStatus = 'Meme uploaded successfully! 🎉';
+                    this.state.uploadStatus = `${type === 'memory' ? 'Memory' : 'Meme'} uploaded successfully! 🎉`;
                     setTimeout(() => {
                         this.state.uploadStatus = '';
                         this.render();
@@ -251,26 +290,30 @@
                 this.render();
             }
 
-            async promoteToHallOfFame(meme) {
+            async promoteToHallOfFame(item, type) {
                 try {
-                    await addDoc(collection(db, 'hall-of-fame'), {
-                        imageData: meme.imageData,
-                        uploadedBy: meme.uploadedBy,
-                        timestamp: meme.timestamp,
-                        fileName: meme.fileName
+                    const hofCollection = type === 'memory' ? 'hall-of-fame-memories' : 'hall-of-fame-memes';
+                    const sourceCollection = type === 'memory' ? 'memories' : 'memes';
+
+                    await addDoc(collection(db, hofCollection), {
+                        imageData: item.imageData,
+                        uploadedBy: item.uploadedBy,
+                        timestamp: item.timestamp,
+                        fileName: item.fileName
                     });
 
-                    await deleteDoc(doc(db, 'memes', meme.id));
+                    await deleteDoc(doc(db, sourceCollection, item.id));
                 } catch (err) {
-                    console.error('Failed to promote meme:', err);
+                    console.error('Failed to promote:', err);
                 }
             }
 
-            async removeFromHallOfFame(memeId) {
+            async removeFromHallOfFame(itemId, type) {
                 try {
-                    await deleteDoc(doc(db, 'hall-of-fame', memeId));
+                    const hofCollection = type === 'memory' ? 'hall-of-fame-memories' : 'hall-of-fame-memes';
+                    await deleteDoc(doc(db, hofCollection, itemId));
                 } catch (err) {
-                    console.error('Failed to remove meme:', err);
+                    console.error('Failed to remove:', err);
                 }
             }
 
@@ -319,31 +362,95 @@
                 `;
             }
 
+            renderScrollingHallOfFame(items, type) {
+                if (items.length === 0) {
+                    return `
+                        <div class="text-center py-12 bg-gradient-to-br ${type === 'memory' ? 'from-pink-50 to-purple-50 border-pink-200' : 'from-yellow-50 to-orange-50 border-yellow-200'} rounded-xl border-2">
+                            ${type === 'memory' ? icons.Heart(64) : icons.Star(64)}
+                            <p class="text-gray-600 text-lg mt-4">No Hall of Fame ${type === 'memory' ? 'memories' : 'memes'} yet!</p>
+                            ${this.state.isAdmin ? '<p class="text-sm text-gray-500 mt-2">Promote from the gallery below</p>' : ''}
+                        </div>
+                    `;
+                }
+
+                const containerId = type === 'memory' ? 'memory-scroll-container' : 'meme-scroll-container';
+                const borderColor = type === 'memory' ? 'border-pink-400' : 'border-yellow-400';
+                const bgGradient = type === 'memory' ? 'from-pink-100 to-purple-100' : 'from-yellow-100 to-orange-100';
+
+                return `
+                    <div class="relative">
+                        <div id="${containerId}" class="scroll-container overflow-hidden relative">
+                            <div class="flex transition-transform duration-500">
+                                ${items.map(item => `
+                                    <div class="min-w-full px-2">
+                                        <div class="bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-lg border-4 ${borderColor} relative max-w-3xl mx-auto">
+                                            <img src="${item.imageData}" alt="Hall of Fame" class="w-full h-96 object-contain bg-white">
+                                            <div class="p-6">
+                                                <p class="text-base text-gray-700">By: <span class="font-semibold">${item.uploadedBy}</span></p>
+                                                <p class="text-sm text-gray-600">${new Date(item.timestamp).toLocaleDateString()}</p>
+                                            </div>
+                                            ${this.state.isAdmin ? `
+                                                <button data-remove-hof="${item.id}" data-type="${type}" class="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600 shadow-lg">
+                                                    Remove
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ${items.length > 1 ? `
+                            <button data-scroll="${type}" data-direction="prev" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 shadow-lg z-10">
+                                ${icons.ChevronLeft(32)}
+                            </button>
+                            <button data-scroll="${type}" data-direction="next" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 shadow-lg z-10">
+                                ${icons.ChevronRight(32)}
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
             renderMainPage() {
+                const currentData = this.state.currentTab === 'memes' 
+                    ? { hall: this.state.hallOfFameMemes, regular: this.state.memes, type: 'meme' }
+                    : { hall: this.state.hallOfFameMemories, regular: this.state.memories, type: 'memory' };
+
                 return `
                     <div class="min-h-screen bg-gray-50">
-                        <nav class="bg-white shadow-md sticky top-0 z-10">
-                            <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                                <div>
-                                    <h1 class="text-2xl font-bold text-gray-800">CSH Meme Gallery</h1>
-                                    <p class="text-sm text-gray-600">BT25CSH Batch</p>
-                                </div>
-                                <div class="flex items-center gap-3">
-                                    ${!this.state.isLoggedIn ? `
-                                        <button id="showLoginBtn" class="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm">
-                                            ${icons.Lock(16)}
-                                            Login to Upload
-                                        </button>
-                                    ` : `
-                                        <div class="flex items-center gap-3">
-                                            ${this.state.isAdmin ? '<span class="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">ADMIN</span>' : ''}
-                                            <span class="text-sm text-gray-600">${this.state.userEmail}</span>
-                                            <button id="logoutBtn" class="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
-                                                ${icons.LogOut(16)}
-                                                Logout
+                        <nav class="bg-white shadow-md sticky top-0 z-20">
+                            <div class="max-w-7xl mx-auto px-4 py-4">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h1 class="text-2xl font-bold text-gray-800">CSH Gallery</h1>
+                                        <p class="text-sm text-gray-600">BT25CSH Batch</p>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        ${!this.state.isLoggedIn ? `
+                                            <button id="showLoginBtn" class="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm">
+                                                ${icons.Lock(16)}
+                                                Login to Upload
                                             </button>
-                                        </div>
-                                    `}
+                                        ` : `
+                                            <div class="flex items-center gap-3">
+                                                ${this.state.isAdmin ? '<span class="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">ADMIN</span>' : ''}
+                                                <span class="text-sm text-gray-600">${this.state.userEmail}</span>
+                                                <button id="logoutBtn" class="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
+                                                    ${icons.LogOut(16)}
+                                                    Logout
+                                                </button>
+                                            </div>
+                                        `}
+                                    </div>
+                                </div>
+                                
+                                <div class="flex gap-2 border-b border-gray-200">
+                                    <button data-tab="memes" class="${this.state.currentTab === 'memes' ? 'border-b-2 border-purple-600 text-purple-600' : 'text-gray-600 hover:text-purple-600'} px-6 py-3 font-semibold transition">
+                                        Memes
+                                    </button>
+                                    <button data-tab="memories" class="${this.state.currentTab === 'memories' ? 'border-b-2 border-pink-600 text-pink-600' : 'text-gray-600 hover:text-pink-600'} px-6 py-3 font-semibold transition">
+                                        Memories
+                                    </button>
                                 </div>
                             </div>
                         </nav>
@@ -351,10 +458,10 @@
                         <div class="max-w-7xl mx-auto px-4 py-8">
                             ${this.state.isLoggedIn && !this.state.isAdmin ? `
                                 <div class="mb-8 bg-white rounded-2xl p-6 shadow-md">
-                                    <h2 class="text-xl font-bold text-gray-800 mb-4">Upload Your Meme</h2>
-                                    <label class="flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl cursor-pointer hover:from-purple-700 hover:to-pink-700 transition font-semibold">
+                                    <h2 class="text-xl font-bold text-gray-800 mb-4">Upload Your ${this.state.currentTab === 'memes' ? 'Meme' : 'Memory'}</h2>
+                                    <label class="flex items-center justify-center gap-3 bg-gradient-to-r ${this.state.currentTab === 'memes' ? 'from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' : 'from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700'} text-white px-6 py-3 rounded-xl cursor-pointer transition font-semibold">
                                         ${icons.Upload(20)}
-                                        Choose Meme to Upload
+                                        Choose ${this.state.currentTab === 'memes' ? 'Meme' : 'Memory'} to Upload
                                         <input id="fileInput" type="file" accept="image/*" class="hidden">
                                     </label>
                                     ${this.state.uploadStatus ? `<p class="mt-4 text-center text-green-600 font-medium">${this.state.uploadStatus}</p>` : ''}
@@ -363,57 +470,34 @@
 
                             <div class="mb-12">
                                 <div class="flex items-center gap-3 mb-6">
-                                    ${icons.Star(32)}
+                                    ${this.state.currentTab === 'memes' ? icons.Star(32) : icons.Heart(32)}
                                     <h2 class="text-3xl font-bold text-gray-800">Hall of Fame</h2>
                                 </div>
                                 ${this.state.loading ? `
                                     <div class="text-center py-12"><p class="text-gray-600">Loading...</p></div>
-                                ` : this.state.hallOfFameMemes.length === 0 ? `
-                                    <div class="text-center py-12 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border-2 border-yellow-200">
-                                        ${icons.Star(64)}
-                                        <p class="text-gray-600 text-lg mt-4">No Hall of Fame memes yet!</p>
-                                        ${this.state.isAdmin ? '<p class="text-sm text-gray-500 mt-2">Promote memes from the gallery below</p>' : ''}
-                                    </div>
-                                ` : `
-                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        ${this.state.hallOfFameMemes.map(meme => `
-                                            <div class="bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl overflow-hidden shadow-lg border-4 border-yellow-400 relative">
-                                                <img src="${meme.imageData}" alt="Hall of Fame Meme" class="w-full h-64 object-contain bg-white">
-                                                <div class="p-4">
-                                                    <p class="text-sm text-gray-700">By: <span class="font-semibold">${meme.uploadedBy}</span></p>
-                                                    <p class="text-xs text-gray-600">${new Date(meme.timestamp).toLocaleDateString()}</p>
-                                                </div>
-                                                ${this.state.isAdmin ? `
-                                                    <button data-remove-hof="${meme.id}" class="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-red-600">
-                                                        Remove
-                                                    </button>
-                                                ` : ''}
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                `}
+                                ` : this.renderScrollingHallOfFame(currentData.hall, currentData.type)}
                             </div>
 
                             ${this.state.isLoggedIn ? `
                                 <div>
-                                    <h2 class="text-2xl font-bold text-gray-800 mb-6">All Memes</h2>
-                                    ${this.state.memes.length === 0 ? `
+                                    <h2 class="text-2xl font-bold text-gray-800 mb-6">All ${this.state.currentTab === 'memes' ? 'Memes' : 'Memories'}</h2>
+                                    ${currentData.regular.length === 0 ? `
                                         <div class="text-center py-12 bg-white rounded-xl">
                                             ${icons.Image(64)}
-                                            <p class="text-gray-600 text-lg mt-4">No memes yet. Be the first to upload!</p>
+                                            <p class="text-gray-600 text-lg mt-4">No ${this.state.currentTab} yet. Be the first to upload!</p>
                                         </div>
                                     ` : `
                                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            ${this.state.memes.map(meme => `
+                                            ${currentData.regular.map(item => `
                                                 <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition relative">
-                                                    <img src="${meme.imageData}" alt="Meme" class="w-full h-64 object-contain bg-gray-100">
+                                                    <img src="${item.imageData}" alt="${currentData.type}" class="w-full h-64 object-contain bg-gray-100">
                                                     <div class="p-4">
-                                                        <p class="text-sm text-gray-700">By: <span class="font-semibold">${meme.uploadedBy}</span></p>
-                                                        <p class="text-xs text-gray-600">${new Date(meme.timestamp).toLocaleDateString()}</p>
+                                                        <p class="text-sm text-gray-700">By: <span class="font-semibold">${item.uploadedBy}</span></p>
+                                                        <p class="text-xs text-gray-600">${new Date(item.timestamp).toLocaleDateString()}</p>
                                                     </div>
                                                     ${this.state.isAdmin ? `
-                                                        <button data-promote="${meme.id}" class="absolute top-2 right-2 bg-yellow-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-yellow-600 flex items-center gap-1">
-                                                            ${icons.Star(12)}
+                                                        <button data-promote="${item.id}" data-type="${currentData.type}" class="absolute top-2 right-2 ${this.state.currentTab === 'memes' ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-pink-500 hover:bg-pink-600'} text-white px-3 py-1 rounded-lg text-xs flex items-center gap-1">
+                                                            ${this.state.currentTab === 'memes' ? icons.Star(12) : icons.Heart(12)}
                                                             Hall of Fame
                                                         </button>
                                                     ` : ''}
@@ -448,20 +532,42 @@
                 if (passwordInput) passwordInput.oninput = (e) => { this.state.password = e.target.value; };
 
                 const fileInput = document.getElementById('fileInput');
-                if (fileInput) fileInput.onchange = (e) => this.handleFileUpload(e.target.files[0]);
+                if (fileInput) fileInput.onchange = (e) => this.handleFileUpload(e.target.files[0], this.state.currentTab === 'memories' ? 'memory' : 'meme');
+
+                document.querySelectorAll('[data-tab]').forEach(btn => {
+                    btn.onclick = () => {
+                        this.state.currentTab = btn.getAttribute('data-tab');
+                        this.render();
+                    };
+                });
+
+                document.querySelectorAll('[data-scroll]').forEach(btn => {
+                    btn.onclick = () => {
+                        const type = btn.getAttribute('data-scroll');
+                        const direction = btn.getAttribute('data-direction');
+                        if (type === 'meme') {
+                            this.scrollMemes(direction);
+                        } else {
+                            this.scrollMemories(direction);
+                        }
+                    };
+                });
 
                 document.querySelectorAll('[data-promote]').forEach(btn => {
                     btn.onclick = () => {
-                        const memeId = btn.getAttribute('data-promote');
-                        const meme = this.state.memes.find(m => m.id === memeId);
-                        if (meme) this.promoteToHallOfFame(meme);
+                        const itemId = btn.getAttribute('data-promote');
+                        const type = btn.getAttribute('data-type');
+                        const items = type === 'memory' ? this.state.memories : this.state.memes;
+                        const item = items.find(m => m.id === itemId);
+                        if (item) this.promoteToHallOfFame(item, type);
                     };
                 });
 
                 document.querySelectorAll('[data-remove-hof]').forEach(btn => {
                     btn.onclick = () => {
-                        const memeId = btn.getAttribute('data-remove-hof');
-                        this.removeFromHallOfFame(memeId);
+                        const itemId = btn.getAttribute('data-remove-hof');
+                        const type = btn.getAttribute('data-type');
+                        this.removeFromHallOfFame(itemId, type);
                     };
                 });
             }
