@@ -44,7 +44,7 @@
             ChevronRight: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
             Download: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
             Trash: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
-            Bell: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>` // NEW
+            Bell: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`
         };
 
         // Helper function to extract the Storage file path from the full public URL
@@ -106,11 +106,11 @@
                 this.state = {
                     isLoggedIn: false,
                     isAdmin: false, // Full Admin (Wipe/Promote - 050)
-                    isNoticesAdmin: false, // Notices Admin (050 & 051) <-- NEW
+                    isNoticesAdmin: false, // Notices Admin (050 & 051)
                     userEmail: '',
                     email: '',
                     password: '',
-                    currentTab: 'notices', // Start on notices tab <-- MODIFIED DEFAULT TAB
+                    currentTab: 'notices', // Default to notices tab
                     hallOfFameMemes: [],
                     hallOfFameMemories: [],
                     memes: [],
@@ -129,13 +129,12 @@
             }
 
             async init() {
-                // Modified to load both data types
                 await Promise.all([this.loadAllData(), this.loadNotices()]); 
                 this.render();
                 this.startAutoScroll();
             }
             
-            async loadNotices() { // NEW FUNCTION
+            async loadNotices() {
                 const { data, error } = await supabase
                     .from('notices')
                     .select('id, content, uploadedBy, createdAt, timestamp')
@@ -143,7 +142,6 @@
 
                 if (error) {
                     console.error('Error loading notices:', error);
-                    // Continue even on error, as public read is required
                 }
                 this.state.notices = data || [];
                 this.render(); 
@@ -194,26 +192,26 @@
                 const emailRegex = /^bt25csh\d{3}@iiitn\.ac\.in$/i;
 
                 let expectedPassword = null;
-                let isAdminCheck = false; // Admin 050 (Full)
-                let isNoticesAdminCheck = false; // Admin 050 & 051 <-- NEW
+                let isAdminCheck = false; 
+                let isNoticesAdminCheck = false; 
 
                 // Admin 050 (Full Admin + Notices)
                 if (emailLower === 'bt25csh050@iiitn.ac.in') {
                     expectedPassword = 'wushangclanssSS11!!';
                     isAdminCheck = true;
-                    isNoticesAdminCheck = true; // <-- NEW
+                    isNoticesAdminCheck = true; 
                 } 
-                // Admin 051 (Notices Only) <-- NEW
+                // Admin 051 (Notices Only)
                 else if (emailLower === 'bt25csh051@iiitn.ac.in') {
-                    expectedPassword = 'iambtechboy';
+                    expectedPassword = 'iambtechboy'; // client side only check as requested
                     isAdminCheck = false;
-                    isNoticesAdminCheck = true; // <-- NEW
+                    isNoticesAdminCheck = true; 
                 }
                 // Regular User credentials
                 else if (emailRegex.test(emailLower)) {
                     expectedPassword = 'cshgoated'; 
                     isAdminCheck = false;
-                    isNoticesAdminCheck = false; // <-- NEW
+                    isNoticesAdminCheck = false; 
                 }
                 
                 if (!expectedPassword || password !== expectedPassword) {
@@ -224,7 +222,7 @@
                 
                 this.state.isLoggedIn = true;
                 this.state.isAdmin = isAdminCheck;
-                this.state.isNoticesAdmin = isNoticesAdminCheck; // <-- NEW
+                this.state.isNoticesAdmin = isNoticesAdminCheck;
                 this.state.userEmail = emailLower; 
                 this.state.showLogin = false;
                 
@@ -234,7 +232,7 @@
             handleLogout() {
                 this.state.isLoggedIn = false;
                 this.state.isAdmin = false;
-                this.state.isNoticesAdmin = false; // <-- NEW
+                this.state.isNoticesAdmin = false; 
                 this.state.userEmail = '';
                 this.state.email = '';
                 this.state.password = '';
@@ -245,19 +243,18 @@
             async handleWipeAndArchive() {
                 if (!this.state.isAdmin) return;
                 
-                const confirmation = confirm("ADMIN WARNING: This action will permanently DOWNLOAD ALL IMAGES (BACKUP) and then DELETE ALL DATA and FILES from both the database tables (memes/memories) and the Storage bucket (gallery) to FREE UP SPACE. Are you absolutely sure?");
+                const confirmation = confirm("ADMIN WARNING: This action will permanently DOWNLOAD ALL IMAGES (BACKUP) and then DELETE ALL DATA and FILES from both the database tables (memes/memories/notices) and the Storage bucket (gallery) to FREE UP SPACE. Are you absolutely sure?");
 
                 if (!confirmation) {
                     this.state.uploadStatus = 'Wipe operation cancelled.';
                     this.render();
                     return;
                 }
-
+                // ... (rest of the wipe logic is unchanged, just ensures notices are deleted too) ...
                 this.state.uploadStatus = 'ARCHIVING: Preparing to download all files...';
                 this.render();
 
                 try {
-                    // 1. COLLECT ALL DATA (URLs and Paths)
                     const allMemes = await supabase.from('memes').select('imageUrl');
                     const allMemories = await supabase.from('memories').select('imageUrl');
 
@@ -276,7 +273,6 @@
                         this.state.uploadStatus = `ARCHIVING: Initiating download of ${allUrls.length} files. Please allow multiple downloads in your browser... (This is your backup!)`;
                         this.render();
 
-                        // 2. TRIGGER DOWNLOADS (Client-side anchor trick)
                         allUrls.forEach((url, index) => {
                             const a = document.createElement('a');
                             a.href = url;
@@ -290,7 +286,6 @@
                         await new Promise(resolve => setTimeout(resolve, 5000));
                     }
                     
-                    // 3. DELETE STORAGE FILES (Freeing up space)
                     this.state.uploadStatus = `WIPE: Deleting ${allFilePaths.length} files from Storage to free up space...`;
                     this.render();
                     
@@ -304,7 +299,6 @@
                         }
                     }
 
-                    // 4. DELETE DATABASE ROWS
                     this.state.uploadStatus = 'WIPE: Deleting all database entries...';
                     this.render();
                     
@@ -314,13 +308,13 @@
                     const { error: memoriesDeleteError } = await supabase.from('memories').delete().neq('id', 0);
                     if (memoriesDeleteError) console.error('Memory table deletion failed. Check RLS.');
                     
-                    // 5. Delete notices as well <-- NEW
+                    // Delete notices as well
                     const { error: noticesDeleteError } = await supabase.from('notices').delete().neq('id', 0);
                     if (noticesDeleteError) console.error('Notices table deletion failed. Check RLS.');
 
                     this.state.uploadStatus = `ARCHIVE & WIPE SUCCESSFUL: ${allUrls.length} files archived and all data/files deleted. Space is now free!`;
                     this.loadAllData(); 
-                    this.loadNotices(); // <-- ADDED
+                    this.loadNotices(); 
                     
                 } catch (err) {
                     this.state.uploadStatus = `WIPE FAILED: ${err.message}`;
@@ -328,16 +322,63 @@
                     this.render();
                 }
             }
+            
+            // --- NEW: DELETE INDIVIDUAL NOTICE FUNCTION ---
+            async handleDeleteNotice(id) {
+                if (!this.state.isNoticesAdmin) return;
+                this.state.uploadStatus = 'Deleting notice...';
+                this.render();
 
-            // --- NEW: ADD NOTICE FUNCTION ---
+                try {
+                    const { error } = await supabase
+                        .from('notices')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) throw error;
+                    
+                    this.state.uploadStatus = 'Notice deleted successfully.';
+                    this.loadNotices(); // Reload data
+                    setTimeout(() => {
+                        this.state.uploadStatus = '';
+                        this.render();
+                    }, 3000);
+
+                } catch (err) {
+                    this.state.uploadStatus = `Deletion failed: ${err.message}.`;
+                    console.error('Notice deletion error:', err);
+                }
+                this.render();
+            }
+
+
+            // --- REVISED: ADD NOTICE FUNCTION (WITH 10-NOTICE LIMIT) ---
             async handleAddNotice(content) {
-                // Client-side authentication check only for posting
                 if (!this.state.isNoticesAdmin || !content.trim()) return;
 
                 this.state.uploadStatus = 'Posting notice...';
                 this.render();
 
                 try {
+                    // 1. Check current count and enforce limit (pop oldest)
+                    if (this.state.notices.length >= 10) {
+                        this.state.uploadStatus = 'Notice limit reached (10). Deleting oldest notice...';
+                        this.render();
+                        
+                        // Notices are sorted descending by timestamp, so the last element is the OLDEST.
+                        const oldestNotice = this.state.notices[this.state.notices.length - 1];
+                        
+                        const { error: deleteError } = await supabase
+                            .from('notices')
+                            .delete()
+                            .eq('id', oldestNotice.id);
+                            
+                        if (deleteError) {
+                            console.error('Failed to delete oldest notice. Inserting anyway:', deleteError);
+                        }
+                    }
+
+                    // 2. Insert new notice
                     const { error } = await supabase
                         .from('notices')
                         .insert([
@@ -368,6 +409,7 @@
 
             // --- UPLOAD, PROMOTE, SCROLL (Retained/Adapted) ---
             async handleFileUpload(file, type) {
+                // ... (logic unchanged) ...
                 if (!this.state.isLoggedIn) {
                     this.state.uploadStatus = 'Please log in to upload.'; 
                     this.render(); 
@@ -463,7 +505,7 @@
             }
             
             // --- RENDERING ---
-            renderNoticesTab() { // NEW RENDER FUNCTION
+            renderNoticesTab() {
                 const isNoticesAdmin = this.state.isNoticesAdmin;
                 
                 return `
@@ -475,7 +517,7 @@
                         
                         ${isNoticesAdmin ? `
                             <div class="bg-white rounded-xl p-6 shadow-lg mb-8 border-2 border-indigo-200">
-                                <h3 class="text-xl font-bold text-indigo-700 mb-4">Post New Notice</h3>
+                                <h3 class="text-xl font-bold text-indigo-700 mb-4">Post New Notice (Limit: ${this.state.notices.length}/10)</h3>
                                 <textarea id="noticeContentInput" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="3" placeholder="Type your important announcement here..."></textarea>
                                 <button id="postNoticeBtn" class="mt-3 bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">
                                     Post Notice
@@ -492,10 +534,14 @@
                             <div class="space-y-4">
                                 ${this.state.notices.map((notice, index) => {
                                     const isTop = index === 0;
-                                    // Highlight topmost notice
                                     const bgColor = isTop ? 'bg-indigo-600 text-white shadow-xl ring-4 ring-indigo-300' : 'bg-white text-gray-800 shadow-md border border-gray-200';
                                     const headerColor = isTop ? 'text-indigo-200' : 'text-indigo-600';
-                                    const timestamp = new Date(notice.timestamp).toLocaleString();
+                                    
+                                    // FIX: Correct date formatting using timestamp
+                                    const dateObj = new Date(notice.timestamp);
+                                    const timestamp = dateObj.toLocaleDateString('en-US', {
+                                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                    });
 
                                     return `
                                         <div class="p-5 rounded-xl ${bgColor} transition duration-300 hover:shadow-lg">
@@ -506,7 +552,15 @@
                                                 <p class="text-xs ${isTop ? 'text-indigo-200' : 'text-gray-500'}">${timestamp}</p>
                                             </div>
                                             <p class="text-lg font-medium whitespace-pre-wrap">${notice.content}</p>
-                                            <p class="text-xs mt-3 ${isTop ? 'text-indigo-300' : 'text-gray-500'}">Posted by: ${notice.uploadedBy}</p>
+                                            
+                                            <p class="text-xs mt-3 flex items-center justify-between ${isTop ? 'text-indigo-300' : 'text-gray-500'}">
+                                                <span>Posted by: ${notice.uploadedBy}</span>
+                                                ${isNoticesAdmin ? `
+                                                    <button data-delete-notice="${notice.id}" class="flex items-center gap-1 bg-red-600 text-white px-2 py-1 text-xs rounded-lg hover:bg-red-700 transition">
+                                                        ${icons.Trash(12)} Delete
+                                                    </button>
+                                                ` : ''}
+                                            </p>
                                         </div>
                                     `;
                                 }).join('')}
@@ -520,7 +574,7 @@
             renderMainPage() {
                 const isMemeTab = this.state.currentTab === 'memes';
                 const isMemoryTab = this.state.currentTab === 'memories';
-                const isNoticesTab = this.state.currentTab === 'notices'; // NEW
+                const isNoticesTab = this.state.currentTab === 'notices'; 
 
                 const currentData = isMemeTab 
                     ? { hall: this.state.hallOfFameMemes, regular: this.state.memes, type: 'meme' }
@@ -651,142 +705,7 @@
                 `;
             }
 
-            // Scroll/Modal rendering functions (omitted for brevity, assume they are correct)
-            // ...
-
-            attachEventListeners() {
-                const closeLogin = document.getElementById('closeLogin');
-                if (closeLogin) closeLogin.onclick = () => { this.state.showLogin = false; this.render(); };
-
-                const showLoginBtn = document.getElementById('showLoginBtn');
-                const showLoginBtnGated = document.getElementById('showLoginBtn_gated');
-                const showLogin = () => { this.state.showLogin = true; this.render(); };
-                if (showLoginBtn) showLoginBtn.onclick = showLogin;
-                if (showLoginBtnGated) showLoginBtnGated.onclick = showLogin;
-
-                const loginBtn = document.getElementById('loginBtn');
-                if (loginBtn) loginBtn.onclick = (e) => this.handleLogin(e);
-
-                const logoutBtn = document.getElementById('logoutBtn');
-                if (logoutBtn) logoutBtn.onclick = () => this.handleLogout();
-                
-                // Admin Wipe Button
-                const wipeAndArchiveBtn = document.getElementById('wipeAndArchiveBtn');
-                if (wipeAndArchiveBtn) wipeAndArchiveBtn.onclick = () => this.handleWipeAndArchive();
-                
-                // New Notice Post Button
-                const postNoticeBtn = document.getElementById('postNoticeBtn');
-                if (postNoticeBtn) postNoticeBtn.onclick = () => {
-                    const contentInput = document.getElementById('noticeContentInput');
-                    if (contentInput) {
-                        this.handleAddNotice(contentInput.value);
-                    }
-                };
-
-
-                const emailInput = document.getElementById('emailInput');
-                if (emailInput) emailInput.oninput = (e) => { this.state.email = e.target.value; };
-
-                const passwordInput = document.getElementById('passwordInput');
-                if (passwordInput) passwordInput.oninput = (e) => { this.state.password = e.target.value; };
-
-                const fileInput = document.getElementById('fileInput');
-                if (fileInput) fileInput.onchange = (e) => this.handleFileUpload(e.target.files[0], this.state.currentTab === 'memories' ? 'memory' : 'meme');
-
-                document.querySelectorAll('[data-tab]').forEach(btn => {
-                    btn.onclick = () => {
-                        this.state.currentTab = btn.getAttribute('data-tab');
-                        if (this.state.currentTab !== 'notices') {
-                             this.loadAllData();
-                        } else {
-                            this.loadNotices();
-                        }
-                        this.render();
-                    };
-                });
-                
-                // Scrolling event listeners...
-                document.querySelectorAll('[data-scroll]').forEach(btn => {
-                    btn.onclick = () => {
-                        const type = btn.getAttribute('data-scroll');
-                        const direction = btn.getAttribute('data-direction');
-                        if (type === 'meme') {
-                            this.scrollMemes(direction);
-                        } else {
-                            this.scrollMemories(direction);
-                        }
-                    };
-                });
-
-                document.querySelectorAll('[data-promote]').forEach(btn => {
-                    btn.onclick = () => {
-                        const itemId = parseInt(btn.getAttribute('data-promote'));
-                        const type = btn.getAttribute('data-type');
-                        const items = type === 'memory' ? this.state.memories : this.state.memes;
-                        const item = items.find(m => m.id === itemId);
-                        if (item) this.promoteToHallOfFame(item, type);
-                    };
-                });
-
-                document.querySelectorAll('[data-remove-hof]').forEach(btn => {
-                    btn.onclick = () => {
-                        const itemId = parseInt(btn.getAttribute('data-remove-hof'));
-                        const type = btn.getAttribute('data-type');
-                        this.removeFromHallOfFame(itemId, type);
-                    };
-                });
-            }
-            
-            // Auto-scroll and manual scroll functions (unchanged)
-            scrollMemes() { 
-                const container = document.getElementById('meme-scroll-container');
-                if (!container) return;
-                const totalItems = this.state.hallOfFameMemes.length;
-                let newIndex = this.state.memeScrollIndex;
-                const direction = arguments[0];
-
-                if (direction === 'next') {
-                    newIndex = (newIndex + 1) % totalItems;
-                } else if (direction === 'prev') {
-                    newIndex = (newIndex - 1 + totalItems) % totalItems;
-                }
-                
-                this.state.memeScrollIndex = newIndex;
-                this.render(); 
-            }
-
-            scrollMemories() { 
-                const container = document.getElementById('memory-scroll-container');
-                if (!container) return;
-                const totalItems = this.state.hallOfFameMemories.length;
-                let newIndex = this.state.memoryScrollIndex;
-                const direction = arguments[0];
-
-                if (direction === 'next') {
-                    newIndex = (newIndex + 1) % totalItems;
-                } else if (direction === 'prev') {
-                    newIndex = (newIndex - 1 + totalItems) % totalItems;
-                }
-
-                this.state.memoryScrollIndex = newIndex;
-                this.render(); 
-            }
-
-            startAutoScroll() {
-                if (this.memeScrollInterval) clearInterval(this.memeScrollInterval);
-                this.memeScrollInterval = setInterval(() => {
-                    if (this.state.currentTab === 'memes') {
-                        this.scrollMemes('next');
-                    }
-                }, 5000);
-
-                if (this.memoryScrollInterval) clearInterval(this.memoryScrollInterval);
-                this.memoryScrollInterval = setInterval(() => {
-                    if (this.state.currentTab === 'memories') {
-                        this.scrollMemories('next');
-                    }
-                }, 5000);
-            }
+            // ... (renderLoginModal and renderScrollingHallOfFame are omitted for brevity, they are assumed to be correct) ...
 
             renderLoginModal() {
                  return `
@@ -897,6 +816,147 @@
                 });
             }
 
+            attachEventListeners() {
+                const closeLogin = document.getElementById('closeLogin');
+                if (closeLogin) closeLogin.onclick = () => { this.state.showLogin = false; this.render(); };
+
+                const showLoginBtn = document.getElementById('showLoginBtn');
+                const showLoginBtnGated = document.getElementById('showLoginBtn_gated');
+                const showLogin = () => { this.state.showLogin = true; this.render(); };
+                if (showLoginBtn) showLoginBtn.onclick = showLogin;
+                if (showLoginBtnGated) showLoginBtnGated.onclick = showLogin;
+
+                const loginBtn = document.getElementById('loginBtn');
+                if (loginBtn) loginBtn.onclick = (e) => this.handleLogin(e);
+
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) logoutBtn.onclick = () => this.handleLogout();
+                
+                // Admin Wipe Button
+                const wipeAndArchiveBtn = document.getElementById('wipeAndArchiveBtn');
+                if (wipeAndArchiveBtn) wipeAndArchiveBtn.onclick = () => this.handleWipeAndArchive();
+                
+                // New Notice Post Button
+                const postNoticeBtn = document.getElementById('postNoticeBtn');
+                if (postNoticeBtn) postNoticeBtn.onclick = () => {
+                    const contentInput = document.getElementById('noticeContentInput');
+                    if (contentInput) {
+                        this.handleAddNotice(contentInput.value);
+                    }
+                };
+                
+                // NEW: Notice Delete Buttons
+                document.querySelectorAll('[data-delete-notice]').forEach(btn => {
+                    btn.onclick = () => {
+                        const noticeId = parseInt(btn.getAttribute('data-delete-notice'));
+                        if (confirm('Are you sure you want to permanently delete this notice?')) {
+                            this.handleDeleteNotice(noticeId);
+                        }
+                    };
+                });
+
+
+                const emailInput = document.getElementById('emailInput');
+                if (emailInput) emailInput.oninput = (e) => { this.state.email = e.target.value; };
+
+                const passwordInput = document.getElementById('passwordInput');
+                if (passwordInput) passwordInput.oninput = (e) => { this.state.password = e.target.value; };
+
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) fileInput.onchange = (e) => this.handleFileUpload(e.target.files[0], this.state.currentTab === 'memories' ? 'memory' : 'meme');
+
+                document.querySelectorAll('[data-tab]').forEach(btn => {
+                    btn.onclick = () => {
+                        this.state.currentTab = btn.getAttribute('data-tab');
+                        if (this.state.currentTab !== 'notices') {
+                             this.loadAllData();
+                        } else {
+                            this.loadNotices();
+                        }
+                        this.render();
+                    };
+                });
+                
+                // Scrolling event listeners...
+                document.querySelectorAll('[data-scroll]').forEach(btn => {
+                    btn.onclick = () => {
+                        const type = btn.getAttribute('data-scroll');
+                        const direction = btn.getAttribute('data-direction');
+                        if (type === 'meme') {
+                            this.scrollMemes(direction);
+                        } else {
+                            this.scrollMemories(direction);
+                        }
+                    };
+                });
+
+                document.querySelectorAll('[data-promote]').forEach(btn => {
+                    btn.onclick = () => {
+                        const itemId = parseInt(btn.getAttribute('data-promote'));
+                        const type = btn.getAttribute('data-type');
+                        const items = type === 'memory' ? this.state.memories : this.state.memes;
+                        const item = items.find(m => m.id === itemId);
+                        if (item) this.promoteToHallOfFame(item, type);
+                    };
+                });
+
+                document.querySelectorAll('[data-remove-hof]').forEach(btn => {
+                    btn.onclick = () => {
+                        const itemId = parseInt(btn.getAttribute('data-remove-hof'));
+                        const type = btn.getAttribute('data-type');
+                        this.removeFromHallOfFame(itemId, type);
+                    };
+                });
+            }
+            
+            // Auto-scroll and manual scroll functions (kept for completeness)
+            scrollMemes(direction) { 
+                const container = document.getElementById('meme-scroll-container');
+                if (!container) return;
+                const totalItems = this.state.hallOfFameMemes.length;
+                let newIndex = this.state.memeScrollIndex;
+
+                if (direction === 'next') {
+                    newIndex = (newIndex + 1) % totalItems;
+                } else if (direction === 'prev') {
+                    newIndex = (newIndex - 1 + totalItems) % totalItems;
+                }
+                
+                this.state.memeScrollIndex = newIndex;
+                this.render(); 
+            }
+
+            scrollMemories(direction) { 
+                const container = document.getElementById('memory-scroll-container');
+                if (!container) return;
+                const totalItems = this.state.hallOfFameMemories.length;
+                let newIndex = this.state.memoryScrollIndex;
+
+                if (direction === 'next') {
+                    newIndex = (newIndex + 1) % totalItems;
+                } else if (direction === 'prev') {
+                    newIndex = (newIndex - 1 + totalItems) % totalItems;
+                }
+
+                this.state.memoryScrollIndex = newIndex;
+                this.render(); 
+            }
+
+            startAutoScroll() {
+                if (this.memeScrollInterval) clearInterval(this.memeScrollInterval);
+                this.memeScrollInterval = setInterval(() => {
+                    if (this.state.currentTab === 'memes') {
+                        this.scrollMemes('next');
+                    }
+                }, 5000);
+
+                if (this.memoryScrollInterval) clearInterval(this.memoryScrollInterval);
+                this.memoryScrollInterval = setInterval(() => {
+                    if (this.state.currentTab === 'memories') {
+                        this.scrollMemories('next');
+                    }
+                }, 5000);
+            }
         }
 
         new MemeGallery();
