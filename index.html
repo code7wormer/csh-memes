@@ -7,19 +7,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* --- CUSTOM GAMING STYLES --- */
-        /* MODIFIED: Font changed back to Rajdhani */
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;700&display=swap');
         
         body { 
             margin: 0; 
-            /* MODIFIED: Font changed back to Rajdhani */
             font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; 
             /* MODIFIED: Made transparent to allow video background */
             background-color: transparent; 
             color: #c5c8d1; /* Light grey/off-white for contrast */
         }
         
-        /* --- NEW: Background Video CSS --- */
+        /* --- MODIFIED: Background Video CSS --- */
         #video-background-color {
             position: fixed;
             top: 0;
@@ -27,7 +25,7 @@
             width: 100%;
             height: 100%;
             background-color: #0b0c10; /* Original background color */
-            z-index: -2; /* Places it behind the video */
+            z-index: -3; /* Places it behind the video */
         }
         #bg-video {
             position: fixed;
@@ -36,7 +34,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover; /* Ensures video covers screen */
-            z-index: -1; /* Puts it behind all content */
+            z-index: -2; /* On top of color, behind scanlines */
             opacity: 0.5; /* 50% opacity as requested */
         }
         /* --- END: Background Video CSS --- */
@@ -53,19 +51,19 @@
         .tech-border { border: 2px solid #334155; box-shadow: 0 0 10px rgba(51, 65, 85, 0.5); }
         .tech-box-bg { background-color: #1a1b26; }
         
-        /* Custom scroll behavior (unchanged but placed here for clarity) */
+        /* Custom scroll behavior */
         .scroll-container { scroll-behavior: smooth; overflow-x: scroll; }
         .snap-full { min-width: 100%; }
         .scroll-container::-webkit-scrollbar { display: none; }
         .scroll-container { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* NEW: Custom gradients for a high-tech/cyber look */
+        /* Custom gradients */
         .admin-gradient { 
-            background-image: linear-gradient(to right, #00f2ff, #0077ff); /* Neon Blue/Cyan */
+            background-image: linear-gradient(to right, #00f2ff, #0077ff); 
             box-shadow: 0 0 15px rgba(0, 242, 255, 0.6); 
         }
         .upload-gradient { 
-            background-image: linear-gradient(to right, #ff0077, #aa00ff); /* Cyber Pink/Violet */
+            background-image: linear-gradient(to right, #ff0077, #aa00ff); 
             box-shadow: 0 0 15px rgba(255, 0, 119, 0.6); 
         }
         
@@ -82,7 +80,16 @@
             0% { background-position: 0 0; }
             100% { background-position: 100% 100%; }
         }
-        .scanline-effect {
+        
+        /* MODIFIED: Scanline effect moved to its own overlay */
+        #scanline-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Lets clicks pass through */
+            z-index: -1; /* Sits on top of video, behind all content */
             background-image: linear-gradient(
                 rgba(255, 255, 255, 0.05) 1px, 
                 transparent 1px
@@ -90,6 +97,7 @@
             background-size: 100% 4px;
             animation: scanline-bg 20s linear infinite;
         }
+
         /* Style for the Hall of Fame cards */
         .hof-card {
             border-image: linear-gradient(45deg, #00f2ff, #ff0077) 1;
@@ -103,7 +111,7 @@
             box-shadow: 0 0 30px rgba(0, 242, 255, 0.5), 0 0 30px rgba(255, 0, 119, 0.5);
         }
 
-        /* Sparkle effect on successful login - CSS for a subtle touch */
+        /* Sparkle effect on successful login */
         @keyframes sparkle {
             0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
             50% { opacity: 1; transform: scale(1.5) rotate(180deg); }
@@ -117,7 +125,7 @@
             animation: sparkle 1s ease-out forwards;
         }
         
-        /* --- NEW: C-Matrix Effect --- */
+        /* --- C-Matrix Effect --- */
         #cmatrix-background {
             position: fixed;
             top: 0;
@@ -139,7 +147,7 @@
             opacity: 0.8; 
         }
 
-        /* --- NEW: Content Transition Animation --- */
+        /* --- Content Transition Animation --- */
         @keyframes fadeInSlideUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -149,13 +157,14 @@
         }
     </style>
 </head>
-<body class="scanline-effect">
+<body class="">
 
     <div id="video-background-color"></div>
     <video autoplay loop muted id="bg-video">
         <source src="mario.mp4" type="video/mp4">
         Your browser does not support the video tag.
     </video>
+    <div id="scanline-overlay"></div>
     <div id="root"></div>
 
     <script type="module">
@@ -172,7 +181,7 @@
         
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // --- NEW: C-Matrix Setup (Run once globally) ---
+        // --- C-Matrix Setup ---
         const CMatrix = {
             container: null,
             interval: null,
@@ -416,13 +425,13 @@
                 let isNoticesAdminCheck = false; 
 
                 // Admin 050 (Full Admin + Notices)
-                if (emailLower === 'bt25csh050@iiitn\.ac\.in') {
+                if (emailLower === 'bt25csh050@iiitn.ac.in') {
                     expectedPassword = 'wushangclanssSS11!!';
                     isAdminCheck = true;
                     isNoticesAdminCheck = true; 
                 } 
                 // Admin 051 (Notices Only)
-                else if (emailLower === 'bt25csh051@iiitn\.ac\.in') {
+                else if (emailLower === 'bt25csh051@iiitn.ac.in') {
                     expectedPassword = 'iambtechboy'; 
                     isAdminCheck = false;
                     isNoticesAdminCheck = true; 
@@ -488,7 +497,6 @@
 
             // --- ADMIN WIPE AND ARCHIVE FUNCTION (UNCHANGED) ---
             async handleWipeAndArchive() {
-                // ... (Logic remains the same) ...
                 if (!this.state.isAdmin) return;
                 
                 const confirmation = confirm("ADMIN WARNING: This action will permanently DOWNLOAD ALL IMAGES (BACKUP) and then DELETE ALL DATA and FILES from both the database tables (memes/memories/notices) and the Storage bucket (gallery) to FREE UP SPACE. Are you absolutely sure?");
@@ -570,7 +578,7 @@
                 }
             }
             
-            // --- NEW: DELETE INDIVIDUAL MEME/MEMORY FUNCTION (Admin 050 only) ---
+            // --- DELETE INDIVIDUAL MEME/MEMORY FUNCTION ---
             async handleDeleteItem(id, type) {
                 if (!this.state.isAdmin) return;
                 this.state.uploadStatus = `Deleting ${type}...`;
@@ -621,14 +629,9 @@
                 this.render();
             }
 
-            // --- DELETE INDIVIDUAL NOTICE FUNCTION (Admin 050 & 051) ---
+            // --- DELETE INDIVIDUAL NOTICE FUNCTION ---
             async handleDeleteNotice(id) {
-                // 1. DEBUG: Check Admin Status
-                console.log(`[DEBUG] Attempting to delete notice ID: ${id}`);
-                console.log(`[DEBUG] isNoticesAdmin status: ${this.state.isNoticesAdmin}`);
-            
                 if (!this.state.isNoticesAdmin) {
-                    // If this logs, you aren't logged in as 050 or 051.
                     console.error("DEBUG ERROR: Admin check failed. Delete request blocked.");
                     return; 
                 }
@@ -643,12 +646,10 @@
                         .eq('id', id);
             
                     if (error) {
-                        // If Supabase returns an error object, log it directly before throwing
                         console.error("[SUPABASE ERROR]: The request returned an error object.", error);
                         throw error;
                     }
                     
-                    // Success path
                     this.state.uploadStatus = 'Notice deleted successfully.';
                     this.loadNotices(); 
                     setTimeout(() => {
@@ -657,20 +658,15 @@
                     }, 3000);
             
                 } catch (err) {
-                    // 2. DEBUG: Catch and Log ALL Error Details
                     this.state.uploadStatus = `Deletion failed: ${err.message}. Check browser console (F12) for full error details.`;
-                    console.error('------------------------------------------');
                     console.error('FINAL NOTICE DELETION ERROR:', err);
-                    console.error('SUPABASE CODE (if available):', err.code || 'N/A');
-                    console.error('SUPABASE DETAILS (if available):', err.details || 'N/A');
-                    console.error('------------------------------------------');
                 }
                 this.render();
             }
+
             // --- ADD NOTICE FUNCTION (WITH 10-NOTICE LIMIT) ---
             async handleAddNotice(content) {
                 if (!this.state.isNoticesAdmin || !content.trim()) return;
-                // ... (Logic remains the same as previous step) ...
                 this.state.uploadStatus = 'Posting notice...';
                 this.render();
 
@@ -720,15 +716,13 @@
                 this.render();
             }
 
-            // --- UPLOAD FUNCTION (MODIFIED FOR COMPRESSION AND DB COLUMN NAMES) ---
+            // --- UPLOAD FUNCTION (WITH COMPRESSION) ---
             async handleFileUpload(file, type) {
                 if (!file || !this.state.isLoggedIn) {
-                    // Ensure file input is cleared even if blocked
                     document.getElementById('fileInput').value = '';
                     return; 
                 }
             
-                // 1. Set processing status
                 this.state.uploadStatus = `Processing and compressing ${type}...`;
                 this.render();
             
@@ -745,7 +739,6 @@
                                 
                                 let width = img.width;
                                 let height = img.height;
-                                // Only scale down if necessary
                                 if (ratio < 1) { 
                                     width = img.width * ratio;
                                     height = img.height * ratio;
@@ -756,7 +749,6 @@
                                 const ctx = canvas.getContext('2d');
                                 ctx.drawImage(img, 0, 0, width, height);
             
-                                // Convert to JPEG blob with 80% quality
                                 canvas.toBlob((blob) => {
                                     if (blob) {
                                         resolve(blob);
@@ -772,12 +764,9 @@
                         reader.readAsDataURL(file);
                     });
             
-                    // 3. Update status for upload
                     this.state.uploadStatus = `Uploading ${type} to Supabase...`;
                     this.render();
             
-                    // 4. Supabase Upload Logic (Restored and complete)
-                    // Use a random UUID for uniqueness
                     const filePath = `${type}s/${crypto.randomUUID()}_${Date.now()}.jpeg`;
             
                     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -789,23 +778,21 @@
             
                     if (uploadError) throw uploadError;
             
-                    // 5. Get Public URL
                     const { data: publicUrlData } = supabase.storage
                         .from('gallery')
                         .getPublicUrl(uploadData.path);
                     
                     const imageUrl = publicUrlData.publicUrl;
                     
-                    // 6. Insert record into database
                     let tableName;
                     if (type === 'memory') {
-                        tableName = 'memories'; // Correct pluralization for the table name
+                        tableName = 'memories'; 
                     } else {
-                        tableName = `${type}s`; // Works for 'meme' -> 'memes'
+                        tableName = `${type}s`; 
                     }
                     
                     const { error: dbError } = await supabase
-                        .from(tableName) // <-- Uses the corrected table name
+                        .from(tableName) 
                         .insert([
                             {
                                 imageUrl: imageUrl,
@@ -817,14 +804,13 @@
                     if (dbError) throw dbError;
             
                     this.state.uploadStatus = `${type} uploaded successfully! 🎉`;
-                    this.loadAllData(); // Refresh the gallery
+                    this.loadAllData(); 
                     
                 } catch (error) {
                     console.error('Upload Error:', error);
                     this.state.uploadStatus = `Upload Failed: ${error.message}. Check browser console for RLS or configuration errors.`;
                     
                 } finally {
-                    // Reset file input and clear status
                     document.getElementById('fileInput').value = ''; 
                     this.render();
                     setTimeout(() => {
@@ -833,17 +819,6 @@
                     }, 5000);
                 }
             }
-            
-            // NOTE: No changes are needed in the attachEventListeners section 
-            // because it is already correctly calling handleFileUpload:
-            // if (fileInput) fileInput.onchange = (e) => this.handleFileUpload(e.target.files[0], this.state.currentTab === 'memories' ? 'memory' : 'meme');
-            // --- END OF MODIFIED UPLOAD FUNCTION ---
-
-            async handleVote(id, type) {
-                // Ensure only one vote per session/user is simple enough for this scope
-                const table = `${type}s`;
-                const item = this.state[`${table}`].find(i => i.id === id);
-            } 
 
             async promoteToHallOfFame(item, type) { 
                 if (!this.state.isAdmin) return;
@@ -914,7 +889,6 @@
                             <div class="space-y-6">
                                 ${this.state.notices.map((notice, index) => {
                                     const isTop = index === 0;
-                                    // NEW: Applying gaming colors
                                     const bgColor = isTop ? 'bg-[#00f2ff]/20 text-white shadow-2xl ring-4 ring-[#00f2ff]/50' : 'bg-[#1a1b26] text-white shadow-lg tech-border hover:shadow-xl';
                                     const headerColor = isTop ? 'text-[#00f2ff]' : 'text-[#ff0077]';
                                     
@@ -960,7 +934,6 @@
                     ? { hall: this.state.hallOfFameMemes, regular: this.state.memes, type: 'meme', color: 'purple' }
                     : { hall: this.state.hallOfFameMemories, regular: this.state.memories, type: 'memory', color: 'pink' };
 
-                // NEW: Gaming Tab Colors
                 const memeTabClass = 'border-[#ff0077] text-[#ff0077]';
                 const memoryTabClass = 'border-[#00f2ff] text-[#00f2ff]';
                 const tabColor = isMemeTab ? memeTabClass : memoryTabClass;
@@ -984,7 +957,8 @@
                                         ` : ''}
                                         ${!this.state.isLoggedIn ? `
                                             <button id="showLoginBtn" class="flex items-center gap-2 admin-gradient text-white px-4 py-2 rounded-xl hover:opacity-90 transition text-sm font-bold shadow-lg animate-pulse-shadow">
-                                                ${icons.ChevronRight(16)} ACCESS PORTAL
+                                                ${icons.ChevronRight(16)}
+                                                ACCESS PORTAL
                                             </button>
                                         ` : `
                                             <div class="flex items-center gap-3">
@@ -1020,7 +994,8 @@
                                 <div id="gated-section-container">
                                     <div class="mb-16">
                                         <div class="flex items-center gap-3 mb-6">
-                                            ${isMemeTab ? icons.Image(36) : icons.Heart(36)} <h2 class="text-3xl font-extrabold ${isMemeTab ? 'neon-text-pink' : 'neon-text-cyan'} tracking-tight">HALL OF GLORY // ARCHIVES</h2>
+                                            ${isMemeTab ? icons.Image(36) : icons.Heart(36)}
+                                            <h2 class="text-3xl font-extrabold ${isMemeTab ? 'neon-text-pink' : 'neon-text-cyan'} tracking-tight">HALL OF GLORY // ARCHIVES</h2>
                                             <span class="text-sm text-gray-500 ml-auto">${isMemeTab ? 'High Score Memes' : 'Legendary Memories'}</span>
                                         </div>
                                         ${this.state.loading ? `
@@ -1068,7 +1043,8 @@
                                                             ${this.state.isAdmin ? `
                                                                 <div class="absolute top-2 right-2 flex gap-2">
                                                                     <button data-promote="${item.id}" data-type="${currentData.type}" class="bg-gray-800 text-yellow-400 p-2 rounded-full text-xs flex items-center justify-center shadow-lg hover:scale-110 transition hover:text-white hover:bg-[#ff0077]">
-                                                                        ${isMemeTab ? icons.Image(18) : icons.Heart(18)} </button>
+                                                                        ${isMemeTab ? icons.Image(18) : icons.Heart(18)}
+                                                                    </button>
                                                                     <button data-delete-item="${item.id}" data-type="${currentData.type}" class="bg-red-700 text-white p-2 rounded-full text-xs shadow-lg hover:bg-red-800 hover:scale-110 transition">
                                                                         ${icons.Trash(18)}
                                                                     </button>
@@ -1081,10 +1057,12 @@
                                         </div>
                                     ` : `
                                         <div class="text-center py-20 tech-box-bg rounded-2xl shadow-2xl border-4 border-[#00f2ff]/50">
-                                            ${icons.ChevronRight(64)} <h3 class="text-3xl font-bold neon-text-cyan mt-6">ACCESS DENIED: LOGIN REQUIRED</h3>
+                                            ${icons.ChevronRight(64)}
+                                            <h3 class="text-3xl font-bold neon-text-cyan mt-6">ACCESS DENIED: LOGIN REQUIRED</h3>
                                             <p class="text-gray-500 mt-3 text-lg">Please use the Access Portal to view the content feed.</p>
                                             <button id="showLoginBtn_gated" class="mt-8 flex items-center gap-2 upload-gradient text-white px-8 py-3 rounded-xl hover:opacity-90 transition text-lg font-bold mx-auto shadow-lg transform hover:scale-[1.05]">
-                                                ${icons.ChevronRight(20)} ACCESS PORTAL NOW
+                                                ${icons.ChevronRight(20)}
+                                                ACCESS PORTAL NOW
                                             </button>
                                         </div>
                                     `}
@@ -1095,14 +1073,13 @@
                 `;
             }
 
-            // --- NEW: CMatrix helper function ---
+            // --- CMatrix helper function ---
             renderCMatrix() {
-                // This function starts CMatrix and returns an empty string
                 CMatrix.start();
                 return ''; 
             }
 
-            // --- CORRECTED RENDER LOGIN MODAL FUNCTION ---
+            // --- RENDER LOGIN MODAL ---
             renderLoginModal() {
                  return `
                     ${this.renderCMatrix()} <div class="fixed inset-0 bg-gray-900 bg-opacity-95 backdrop-blur-md flex items-center justify-center z-50">
@@ -1135,14 +1112,14 @@
                     </div>
                 `;
             }
-            // --- END CORRECTED RENDER LOGIN MODAL FUNCTION ---
 
             renderScrollingHallOfFame(items, type) {
                  if (items.length === 0) {
                     const colorClass = type === 'memory' ? 'neon-text-cyan' : 'neon-text-pink';
                     return `
                         <div class="text-center py-16 tech-box-bg rounded-2xl shadow-xl border-4 ${type === 'memory' ? 'border-[#00f2ff]/50' : 'border-[#ff0077]/50'}">
-                            ${type === 'memory' ? icons.Heart(64) : icons.Image(64)} <p class="text-gray-400 text-xl font-medium mt-4">ARCHIVES: EMPTY SLOT</p>
+                            ${type === 'memory' ? icons.Heart(64) : icons.Image(64)}
+                            <p class="text-gray-400 text-xl font-medium mt-4">ARCHIVES: EMPTY SLOT</p>
                             ${this.state.isAdmin ? '<p class="text-sm text-gray-600 mt-2">Promote an item to fill the slot.</p>' : ''}
                         </div>
                     `;
@@ -1291,7 +1268,6 @@
                 document.querySelectorAll('[data-tab]').forEach(btn => {
                     btn.onclick = () => {
                         const newTab = btn.getAttribute('data-tab');
-                        // Only re-render if the tab is actually changing
                         if (this.state.currentTab !== newTab) {
                             this.state.currentTab = newTab;
                             
@@ -1311,7 +1287,6 @@
                 });
                 
                 // MODIFIED: Added requestAnimationFrame to re-add transition class
-                // This ensures the animation plays on tab switch
                 requestAnimationFrame(() => {
                     const gatedSection = document.getElementById('gated-section-container');
                     if (gatedSection) {
@@ -1354,7 +1329,7 @@
                 });
             }
             
-            // Auto-scroll and manual scroll functions (omitted for brevity, they are unchanged)
+            // Auto-scroll and manual scroll functions
             scrollMemes(direction) { 
                 const container = document.getElementById('meme-scroll-container');
                 if (!container || this.state.hallOfFameMemes.length === 0) return;
@@ -1404,7 +1379,7 @@
             }
         }
 
-        // --- FINAL FIX: Defer initialization until the DOM is ready ---
+        // --- Defer initialization until the DOM is ready ---
         document.addEventListener('DOMContentLoaded', () => {
             new MemeGallery();
         });
