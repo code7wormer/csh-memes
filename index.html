@@ -476,58 +476,75 @@
             }
 
             // --- UPLOAD, PROMOTE, SCROLL (Retained/Adapted) ---
-            async handleFileUpload(file, type) {// 1. DEBUG: Log the start
-                console.log(`[DEBUG UPLOAD] Starting handleFileUpload for ${type}.`);
-                
+            // --- UPLOAD, PROMOTE, SCROLL (Retained/Adapted) ---
+            async handleFileUpload(file, type) {
                 if (!file) {
-                    console.error('[DEBUG UPLOAD] Error: No file object received.');
+                    this.state.uploadStatus = 'No file selected.';
+                    this.render();
                     return;
                 }
-
-                // 2. DEBUG: Log file details
-                console.log(`[DEBUG UPLOAD] File selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
-
-                const fileExt = file.name.split('.').pop();
-                const filePath = `${type}s/${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
                 
-                this.state.uploadStatus = `Uploading ${type}...`; // This is the status they see
+                // Check file size first (5MB limit is good practice)
+                const MAX_SIZE_MB = 5;
+                if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+                    this.state.uploadStatus = `Upload failed: File size must be under ${MAX_SIZE_MB}MB.`;
+                    this.render();
+                    return;
+                }
+            
+                this.state.uploadStatus = `Processing and compressing ${type}...`;
                 this.render();
-
-                // 3. DEBUG: Log before the critical Supabase storage call
-                console.log(`[DEBUG UPLOAD] Attempting storage upload to path: ${filePath}`);
-
-                // --- SUPABASE STORAGE UPLOAD ---
+            
+                let fileToUpload = file;
+                let filePathExtension = file.name.split('.').pop();
+                
+                try {
+                    // 1. CALL THE COMPRESSION FUNCTION
+                    const compressedBlob = await compressImage(file); 
+                    fileToUpload = compressedBlob;
+                    filePathExtension = 'jpeg'; // Compression outputs a JPEG
+                    
+                } catch (err) {
+                    // If compression fails (e.g., corrupted file), log it and fall back to uploading the original file
+                    console.warn('Image compression failed, proceeding with original file:', err);
+                    this.state.uploadStatus = `Warning: Compression failed. Uploading original ${type}...`;
+                    this.render();
+                }
+                
+                const filePath = `${type}s/${Math.random().toString(36).substring(2, 9)}.${filePathExtension}`;
+                
+                this.state.uploadStatus = `Uploading ${type} to storage...`; 
+                this.render();
+            
+                // 2. USE the fileToUpload (either compressed Blob or original File)
                 const { data: uploadData, error: uploadError } = await supabase.storage
                     .from('gallery')
-                    .upload(filePath, file);
-
-                // 4. DEBUG: Log after the critical call
-                console.log('[DEBUG UPLOAD] Supabase storage upload response received.');
-
+                    .upload(filePath, fileToUpload); // <--- FIX: Using fileToUpload
+            
                 if (uploadError) {
-                    this.state.uploadStatus = `Upload failed: ${uploadError.message}`;
+                    this.state.uploadStatus = `Upload failed (Storage): ${uploadError.message}`;
                     console.error('Upload error (Storage):', uploadError);
                     this.render();
                     return;
                 }
-
+            
                 const publicURL = `${supabaseUrl}/storage/v1/object/public/gallery/${filePath}`;
-
-                // 5. DEBUG: Log before DB insertion
-                console.log('[DEBUG UPLOAD] Attempting DB insertion...');
-
+            
+                this.state.uploadStatus = 'Saving entry to database...';
+                this.render();
+            
+                // 3. DATABASE INSERT
                 const { error: dbError } = await supabase
                     .from(`${type}s`)
                     .insert({ 
-                        url: publicURL, 
+                        // Fix: Your database columns are 'imageUrl' and 'timestamp', not 'url' and 'createdAt'
+                        imageUrl: publicURL, 
                         uploadedBy: this.state.userEmail,
-                        createdAt: new Date().toISOString()
+                        timestamp: Date.now() // Use the timestamp column expected by your load function
                     });
-                    
-                // 6. DEBUG: Log after DB insertion
-                console.log('[DEBUG UPLOAD] DB insertion completed.');
-
-
+                
+                // ... (rest of the success/cleanup logic) ...
+            
                 if (dbError) {
                     this.state.uploadStatus = `Database save failed: ${dbError.message}`;
                     console.error('DB error:', dbError);
