@@ -475,8 +475,7 @@
                 this.render();
             }
 
-            // --- UPLOAD, PROMOTE, SCROLL (Retained/Adapted) ---
-            // --- UPLOAD, PROMOTE, SCROLL (Retained/Adapted) ---
+            // --- UPLOAD FUNCTION (MODIFIED FOR COMPRESSION AND DB COLUMN NAMES) ---
             async handleFileUpload(file, type) {
                 if (!file) {
                     this.state.uploadStatus = 'No file selected.';
@@ -484,17 +483,10 @@
                     return;
                 }
                 
-                // Check file size first (5MB limit is good practice)
-                const MAX_SIZE_MB = 5;
-                if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-                    this.state.uploadStatus = `Upload failed: File size must be under ${MAX_SIZE_MB}MB.`;
-                    this.render();
-                    return;
-                }
-            
+                // Status update: Starting compression
                 this.state.uploadStatus = `Processing and compressing ${type}...`;
                 this.render();
-            
+
                 let fileToUpload = file;
                 let filePathExtension = file.name.split('.').pop();
                 
@@ -505,48 +497,46 @@
                     filePathExtension = 'jpeg'; // Compression outputs a JPEG
                     
                 } catch (err) {
-                    // If compression fails (e.g., corrupted file), log it and fall back to uploading the original file
                     console.warn('Image compression failed, proceeding with original file:', err);
                     this.state.uploadStatus = `Warning: Compression failed. Uploading original ${type}...`;
                     this.render();
                 }
                 
+                // Use the determined extension for the path
                 const filePath = `${type}s/${Math.random().toString(36).substring(2, 9)}.${filePathExtension}`;
                 
                 this.state.uploadStatus = `Uploading ${type} to storage...`; 
                 this.render();
-            
-                // 2. USE the fileToUpload (either compressed Blob or original File)
+
+                // 2. SUPABASE STORAGE UPLOAD (Uses the compressed file or original file)
                 const { data: uploadData, error: uploadError } = await supabase.storage
                     .from('gallery')
-                    .upload(filePath, fileToUpload); // <--- FIX: Using fileToUpload
-            
+                    .upload(filePath, fileToUpload); // Upload the compressed/original file
+
                 if (uploadError) {
                     this.state.uploadStatus = `Upload failed (Storage): ${uploadError.message}`;
                     console.error('Upload error (Storage):', uploadError);
                     this.render();
                     return;
                 }
-            
+
                 const publicURL = `${supabaseUrl}/storage/v1/object/public/gallery/${filePath}`;
-            
+
                 this.state.uploadStatus = 'Saving entry to database...';
                 this.render();
-            
-                // 3. DATABASE INSERT
+
+                // 3. CRITICAL DATABASE FIX: Use 'imageUrl' and 'timestamp'
                 const { error: dbError } = await supabase
                     .from(`${type}s`)
                     .insert({ 
-                        // Fix: Your database columns are 'imageUrl' and 'timestamp', not 'url' and 'createdAt'
-                        imageUrl: publicURL, 
+                        imageUrl: publicURL, // Corrected column name
                         uploadedBy: this.state.userEmail,
-                        timestamp: Date.now() // Use the timestamp column expected by your load function
+                        timestamp: Date.now() // Corrected column name
                     });
                 
-                // ... (rest of the success/cleanup logic) ...
-            
+
                 if (dbError) {
-                    this.state.uploadStatus = `Database save failed: ${dbError.message}`;
+                    this.state.uploadStatus = `Database save failed: ${dbError.message}. Check browser console for full error.`;
                     console.error('DB error:', dbError);
                     // Attempt to clean up the storage file if DB save fails
                     await supabase.storage.from('gallery').remove([filePath]);
@@ -560,12 +550,14 @@
                     this.render();
                 }, 3000);
             }
+            // --- END OF MODIFIED UPLOAD FUNCTION ---
 
             async handleVote(id, type) {
                 // Ensure only one vote per session/user is simple enough for this scope
                 const table = `${type}s`;
                 const item = this.state[`${table}`].find(i => i.id === id);
-            
+            } // Closing bracket was missing here in the original code, added for completeness
+
             async promoteToHallOfFame(item, type) { 
                 if (!this.state.isAdmin) return;
                 try {
@@ -997,6 +989,7 @@
                 if (passwordInput) passwordInput.oninput = (e) => { this.state.password = e.target.value; };
 
                 const fileInput = document.getElementById('fileInput');
+                // MODIFIED: Calls handleFileUpload with the selected file and current tab type
                 if (fileInput) fileInput.onchange = (e) => this.handleFileUpload(e.target.files[0], this.state.currentTab === 'memories' ? 'memory' : 'meme');
 
                 document.querySelectorAll('[data-tab]').forEach(btn => {
