@@ -378,34 +378,50 @@
 
             // --- DELETE INDIVIDUAL NOTICE FUNCTION (Admin 050 & 051) ---
             async handleDeleteNotice(id) {
-                if (!this.state.isNoticesAdmin) return;
-                // ... (Logic remains the same as previous step) ...
+                // 1. DEBUG: Check Admin Status
+                console.log(`[DEBUG] Attempting to delete notice ID: ${id}`);
+                console.log(`[DEBUG] isNoticesAdmin status: ${this.state.isNoticesAdmin}`);
+            
+                if (!this.state.isNoticesAdmin) {
+                    // If this logs, you aren't logged in as 050 or 051.
+                    console.error("DEBUG ERROR: Admin check failed. Delete request blocked.");
+                    return; 
+                }
+            
                 this.state.uploadStatus = 'Deleting notice...';
                 this.render();
-
+            
                 try {
                     const { error } = await supabase
                         .from('notices')
                         .delete()
                         .eq('id', id);
-
-                    if (error) throw error;
+            
+                    if (error) {
+                        // If Supabase returns an error object, log it directly before throwing
+                        console.error("[SUPABASE ERROR]: The request returned an error object.", error);
+                        throw error;
+                    }
                     
+                    // Success path
                     this.state.uploadStatus = 'Notice deleted successfully.';
                     this.loadNotices(); 
                     setTimeout(() => {
                         this.state.uploadStatus = '';
                         this.render();
                     }, 3000);
-
+            
                 } catch (err) {
-                    this.state.uploadStatus = `Deletion failed: ${err.message}.`;
-                    console.error('Notice deletion error:', err);
+                    // 2. DEBUG: Catch and Log ALL Error Details
+                    this.state.uploadStatus = `Deletion failed: ${err.message}. Check browser console (F12) for full error details.`;
+                    console.error('------------------------------------------');
+                    console.error('FINAL NOTICE DELETION ERROR:', err);
+                    console.error('SUPABASE CODE (if available):', err.code || 'N/A');
+                    console.error('SUPABASE DETAILS (if available):', err.details || 'N/A');
+                    console.error('------------------------------------------');
                 }
                 this.render();
             }
-
-
             // --- ADD NOTICE FUNCTION (WITH 10-NOTICE LIMIT) ---
             async handleAddNotice(content) {
                 if (!this.state.isNoticesAdmin || !content.trim()) return;
