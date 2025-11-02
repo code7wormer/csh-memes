@@ -4,20 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSH Gallery - BT25CSH - V.2.0: ARCADE MODE</title>
-    <script src="https://cdn/tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* --- CUSTOM GAMING STYLES --- */
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        /* MODIFIED: Font changed back to Rajdhani */
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;700&display=swap');
         
         body { 
             margin: 0; 
-            /* NEW: Gaming Font */
-            font-family: 'Orbitron', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; 
+            /* MODIFIED: Font changed back to Rajdhani */
+            font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; 
             /* MODIFIED: Made transparent to allow video background */
             background-color: transparent; 
             color: #c5c8d1; /* Light grey/off-white for contrast */
         }
-
+        
         /* --- NEW: Background Video CSS --- */
         #video-background-color {
             position: fixed;
@@ -39,7 +40,6 @@
             opacity: 0.5; /* 50% opacity as requested */
         }
         /* --- END: Background Video CSS --- */
-
         
         /* NEW: Utility Classes for a Tech/Neon Look */
         .neon-text-cyan { 
@@ -116,6 +116,37 @@
             border-radius: 50%;
             animation: sparkle 1s ease-out forwards;
         }
+        
+        /* --- NEW: C-Matrix Effect --- */
+        #cmatrix-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 40; /* Behind login modal (50) */
+            background-color: #000;
+        }
+        .matrix-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            user-select: none;
+            opacity: 0.8; 
+        }
+
+        /* --- NEW: Content Transition Animation --- */
+        @keyframes fadeInSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .content-transition {
+            animation: fadeInSlideUp 0.5s ease-out;
+        }
     </style>
 </head>
 <body class="scanline-effect">
@@ -141,14 +172,94 @@
         
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // Lucide Icons
+        // --- NEW: C-Matrix Setup (Run once globally) ---
+        const CMatrix = {
+            container: null,
+            interval: null,
+            columns: [],
+            stop() {
+                if (this.interval) clearInterval(this.interval);
+                this.interval = null;
+                this.container = null;
+                this.columns = [];
+                const oldContainer = document.getElementById('cmatrix-background');
+                if(oldContainer) oldContainer.remove();
+            },
+            start() {
+                if(this.interval) return; // Already running
+
+                const body = document.body;
+                const matrixDiv = document.createElement('div');
+                matrixDiv.id = 'cmatrix-background';
+                matrixDiv.innerHTML = '<div class="matrix-container"></div>';
+                body.appendChild(matrixDiv);
+                
+                this.container = matrixDiv.querySelector('.matrix-container');
+                const canvas = document.createElement('canvas');
+                this.container.appendChild(canvas);
+
+                const ctx = canvas.getContext('2d');
+                let width = canvas.width = window.innerWidth;
+                let height = canvas.height = window.innerHeight;
+                const font_size = 15;
+                const columns = Math.floor(width / font_size);
+                const drops = [];
+                for(let i = 0; i < columns; i++) {
+                    drops[i] = 1;
+                }
+
+                const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+=-{}[]:;\"'<>,.?/\\|";
+
+                const draw = () => {
+                    ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; // Use black fade
+                    ctx.fillRect(0, 0, width, height);
+
+                    ctx.fillStyle = "#00ff41"; // Green text
+                    ctx.font = font_size + "px monospace";
+
+                    for(let i = 0; i < drops.length; i++) {
+                        const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                        const y = drops[i] * font_size;
+                        const x = i * font_size;
+
+                        ctx.fillText(text, x, y);
+
+                        if(y > height && Math.random() > 0.975) { 
+                            drops[i] = 0;
+                        }
+                        drops[i]++;
+                    }
+                };
+
+                // Resize handler to update canvas dimensions
+                const handleResize = () => {
+                    width = canvas.width = window.innerWidth;
+                    height = canvas.height = window.innerHeight;
+                    const newColumns = Math.floor(width / font_size);
+                    while (drops.length < newColumns) {
+                        drops.push(1);
+                    }
+                    while (drops.length > newColumns) {
+                        drops.pop();
+                    }
+                };
+                window.addEventListener('resize', handleResize);
+                this.interval = setInterval(draw, 50);
+
+                // Add resize cleanup to the stop function
+                const originalStop = this.stop.bind(this);
+                this.stop = () => {
+                    originalStop();
+                    window.removeEventListener('resize', handleResize);
+                };
+            }
+        };
+
+        // Lucide Icons (Star and Lock removed)
         const icons = {
-            // NEW: Updated colors for a neon theme (e.g., text-cyan-400 or text-pink-500 for icons)
             Upload: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-cyan"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
             LogOut: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#ff0077" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-pink"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`,
-            // --- MODIFIED: 'Star' icon REMOVED ---
             Image: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-cyan"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`,
-            // --- MODIFIED: 'Lock' icon REMOVED ---
             Heart: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-pink-500"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
             ChevronLeft: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`,
             ChevronRight: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
@@ -305,13 +416,13 @@
                 let isNoticesAdminCheck = false; 
 
                 // Admin 050 (Full Admin + Notices)
-                if (emailLower === 'bt25csh050@iiitn.ac.in') {
+                if (emailLower === 'bt25csh050@iiitn\.ac\.in') {
                     expectedPassword = 'wushangclanssSS11!!';
                     isAdminCheck = true;
                     isNoticesAdminCheck = true; 
                 } 
                 // Admin 051 (Notices Only)
-                else if (emailLower === 'bt25csh051@iiitn.ac.in') {
+                else if (emailLower === 'bt25csh051@iiitn\.ac\.in') {
                     expectedPassword = 'iambtechboy'; 
                     isAdminCheck = false;
                     isNoticesAdminCheck = true; 
@@ -334,6 +445,7 @@
                 this.state.isNoticesAdmin = isNoticesAdminCheck;
                 this.state.userEmail = emailLower; 
                 this.state.showLogin = false;
+                CMatrix.stop(); // MODIFIED: Stop C-Matrix on successful login
                 
                 this.render();
                 // NEW: Trigger sparkle effect on successful login
@@ -731,7 +843,7 @@
                 // Ensure only one vote per session/user is simple enough for this scope
                 const table = `${type}s`;
                 const item = this.state[`${table}`].find(i => i.id === id);
-            } // Closing bracket was missing here in the original code, added for completeness
+            } 
 
             async promoteToHallOfFame(item, type) { 
                 if (!this.state.isAdmin) return;
@@ -770,7 +882,7 @@
                 const isNoticesAdmin = this.state.isNoticesAdmin;
                 
                 return `
-                    <div class="max-w-4xl mx-auto py-8">
+                    <div id="notices-content" class="max-w-4xl mx-auto py-8">
                         <div class="flex items-center gap-4 mb-8">
                             ${icons.Bell(36)}
                             <h2 class="text-4xl font-extrabold neon-text-cyan tracking-tight">System Logs // Notices</h2>
@@ -905,89 +1017,97 @@
                         <div class="max-w-7xl mx-auto px-4 py-12">
                             
                             ${isNoticesTab ? this.renderNoticesTab() : `
-                                
-                                <div class="mb-16">
-                                    <div class="flex items-center gap-3 mb-6">
-                                        ${isMemeTab ? icons.Image(36) : icons.Heart(36)} <h2 class="text-3xl font-extrabold ${isMemeTab ? 'neon-text-pink' : 'neon-text-cyan'} tracking-tight">HALL OF GLORY // ARCHIVES</h2>
-                                        <span class="text-sm text-gray-500 ml-auto">${isMemeTab ? 'High Score Memes' : 'Legendary Memories'}</span>
-                                    </div>
-                                    ${this.state.loading ? `
-                                        <div class="text-center py-12 tech-box-bg rounded-2xl shadow-lg"><p class="text-gray-400">Loading Data...</p></div>
-                                    ` : this.renderScrollingHallOfFame(currentData.hall, currentData.type)}
-                                </div>
-
-                                ${this.state.uploadStatus ? `
-                                    <div class="bg-[#00f2ff]/20 border-l-4 border-[#00f2ff] text-white p-4 mb-10 rounded-lg shadow-md font-bold" role="alert">
-                                        <p class="text-[#00f2ff]">// OPERATION STATUS</p>
-                                        <p class="text-sm">${this.state.uploadStatus}</p>
-                                    </div>
-                                ` : ''}
-
-                                ${this.state.isLoggedIn ? `
-                                    
-                                    <div class="mb-12 tech-box-bg rounded-2xl p-8 shadow-2xl border-4 ${isMemeTab ? 'border-[#ff0077]/50' : 'border-[#00f2ff]/50'} tech-border transform hover:scale-[1.005] transition duration-300">
-                                        <h2 class="text-2xl font-bold text-white mb-5">// UPLOAD_MODULE: Share Your ${isMemeTab ? 'Meme' : 'Memory'}</h2>
-                                        <label class="flex items-center justify-center gap-3 upload-gradient text-white px-8 py-4 rounded-xl cursor-pointer transition font-extrabold text-lg hover:shadow-2xl hover:scale-[1.01] transform duration-300 shadow-xl border border-[#aa00ff] neon-text-pink">
-                                            ${icons.Upload(24)}
-                                            INPUT FILE (Max 5MB)
-                                            <input id="fileInput" type="file" accept="image/*" class="hidden">
-                                        </label>
-                                        <p class="text-sm text-gray-500 mt-3 text-center">Authentication: ${this.state.userEmail}</p>
+                                <div id="gated-section-container">
+                                    <div class="mb-16">
+                                        <div class="flex items-center gap-3 mb-6">
+                                            ${isMemeTab ? icons.Image(36) : icons.Heart(36)} <h2 class="text-3xl font-extrabold ${isMemeTab ? 'neon-text-pink' : 'neon-text-cyan'} tracking-tight">HALL OF GLORY // ARCHIVES</h2>
+                                            <span class="text-sm text-gray-500 ml-auto">${isMemeTab ? 'High Score Memes' : 'Legendary Memories'}</span>
+                                        </div>
+                                        ${this.state.loading ? `
+                                            <div class="text-center py-12 tech-box-bg rounded-2xl shadow-lg"><p class="text-gray-400">Loading Data...</p></div>
+                                        ` : this.renderScrollingHallOfFame(currentData.hall, currentData.type)}
                                     </div>
 
-                                    <div>
-                                        <h2 class="text-3xl font-extrabold text-white mb-8 border-b border-gray-700 pb-4">// LIVE FEED: Latest ${isMemeTab ? 'Memes' : 'Memories'}</h2>
-                                        ${currentData.regular.length === 0 ? `
-                                            <div class="text-center py-20 tech-box-bg rounded-2xl shadow-lg border-2 border-gray-700">
-                                                ${icons.Image(72)}
-                                                <p class="text-gray-500 text-xl font-medium mt-4">Feed Empty. Upload required to begin broadcast.</p>
-                                            </div>
-                                        ` : `
-                                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                                                ${currentData.regular.map(item => `
-                                                    <div class="tech-box-bg rounded-xl overflow-hidden shadow-2xl shadow-gray-900/50 hover:shadow-[0_0_20px_#ff0077] transition transform hover:-translate-y-1 relative group border border-gray-700">
-                                                        <div class="aspect-square bg-gray-900 flex items-center justify-center">
-                                                            <img src="${item.imageUrl}" alt="${currentData.type}" class="w-full h-full object-contain p-2">
-                                                        </div>
-                                                        <div class="p-3">
-                                                            <p class="text-xs text-gray-400">USER: <span class="font-bold text-[#00f2ff]">${item.uploadedBy.split('@')[0]}</span></p>
-                                                            <p class="text-xs text-gray-600 mt-1">${new Date(item.timestamp).toLocaleDateString()}</p>
-                                                        </div>
-                                                        ${this.state.isAdmin ? `
-                                                            <div class="absolute top-2 right-2 flex gap-2">
-                                                                <button data-promote="${item.id}" data-type="${currentData.type}" class="bg-gray-800 text-yellow-400 p-2 rounded-full text-xs flex items-center justify-center shadow-lg hover:scale-110 transition hover:text-white hover:bg-[#ff0077]">
-                                                                    ${isMemeTab ? icons.Image(18) : icons.Heart(18)} </button>
-                                                                <button data-delete-item="${item.id}" data-type="${currentData.type}" class="bg-red-700 text-white p-2 rounded-full text-xs shadow-lg hover:bg-red-800 hover:scale-110 transition">
-                                                                    ${icons.Trash(18)}
-                                                                </button>
+                                    ${this.state.uploadStatus ? `
+                                        <div class="bg-[#00f2ff]/20 border-l-4 border-[#00f2ff] text-white p-4 mb-10 rounded-lg shadow-md font-bold" role="alert">
+                                            <p class="text-[#00f2ff]">// OPERATION STATUS</p>
+                                            <p class="text-sm">${this.state.uploadStatus}</p>
+                                        </div>
+                                    ` : ''}
+
+                                    ${this.state.isLoggedIn ? `
+                                        
+                                        <div class="mb-12 tech-box-bg rounded-2xl p-8 shadow-2xl border-4 ${isMemeTab ? 'border-[#ff0077]/50' : 'border-[#00f2ff]/50'} tech-border transform hover:scale-[1.005] transition duration-300">
+                                            <h2 class="text-2xl font-bold text-white mb-5">// UPLOAD_MODULE: Share Your ${isMemeTab ? 'Meme' : 'Memory'}</h2>
+                                            <label class="flex items-center justify-center gap-3 upload-gradient text-white px-8 py-4 rounded-xl cursor-pointer transition font-extrabold text-lg hover:shadow-2xl hover:scale-[1.01] transform duration-300 shadow-xl border border-[#aa00ff] neon-text-pink">
+                                                ${icons.Upload(24)}
+                                                INPUT FILE (Max 5MB)
+                                                <input id="fileInput" type="file" accept="image/*" class="hidden">
+                                            </label>
+                                            <p class="text-sm text-gray-500 mt-3 text-center">Authentication: ${this.state.userEmail}</p>
+                                        </div>
+
+                                        <div>
+                                            <h2 class="text-3xl font-extrabold text-white mb-8 border-b border-gray-700 pb-4">// LIVE FEED: Latest ${isMemeTab ? 'Memes' : 'Memories'}</h2>
+                                            ${currentData.regular.length === 0 ? `
+                                                <div class="text-center py-20 tech-box-bg rounded-2xl shadow-lg border-2 border-gray-700">
+                                                    ${icons.Image(72)}
+                                                    <p class="text-gray-500 text-xl font-medium mt-4">Feed Empty. Upload required to begin broadcast.</p>
+                                                </div>
+                                            ` : `
+                                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                                                    ${currentData.regular.map(item => `
+                                                        <div class="tech-box-bg rounded-xl overflow-hidden shadow-2xl shadow-gray-900/50 hover:shadow-[0_0_20px_#ff0077] transition transform hover:-translate-y-1 relative group border border-gray-700">
+                                                            <div class="aspect-square bg-gray-900 flex items-center justify-center">
+                                                                <img src="${item.imageUrl}" alt="${currentData.type}" class="w-full h-full object-contain p-2">
                                                             </div>
-                                                        ` : ''}
-                                                    </div>
-                                                `).join('')}
-                                            </div>
-                                        `}
-                                    </div>
-                                ` : `
-                                    <div class="text-center py-20 tech-box-bg rounded-2xl shadow-2xl border-4 border-[#00f2ff]/50">
-                                        ${icons.ChevronRight(64)} <h3 class="text-3xl font-bold neon-text-cyan mt-6">ACCESS DENIED: LOGIN REQUIRED</h3>
-                                        <p class="text-gray-500 mt-3 text-lg">Please use the Access Portal to view the content feed.</p>
-                                        <button id="showLoginBtn_gated" class="mt-8 flex items-center gap-2 upload-gradient text-white px-8 py-3 rounded-xl hover:opacity-90 transition text-lg font-bold mx-auto shadow-lg transform hover:scale-[1.05]">
-                                            ${icons.ChevronRight(20)} ACCESS PORTAL NOW
-                                        </button>
-                                    </div>
-                                `}
+                                                            <div class="p-3">
+                                                                <p class="text-xs text-gray-400">USER: <span class="font-bold text-[#00f2ff]">${item.uploadedBy.split('@')[0]}</span></p>
+                                                                <p class="text-xs text-gray-600 mt-1">${new Date(item.timestamp).toLocaleDateString()}</p>
+                                                            </div>
+                                                            ${this.state.isAdmin ? `
+                                                                <div class="absolute top-2 right-2 flex gap-2">
+                                                                    <button data-promote="${item.id}" data-type="${currentData.type}" class="bg-gray-800 text-yellow-400 p-2 rounded-full text-xs flex items-center justify-center shadow-lg hover:scale-110 transition hover:text-white hover:bg-[#ff0077]">
+                                                                        ${isMemeTab ? icons.Image(18) : icons.Heart(18)} </button>
+                                                                    <button data-delete-item="${item.id}" data-type="${currentData.type}" class="bg-red-700 text-white p-2 rounded-full text-xs shadow-lg hover:bg-red-800 hover:scale-110 transition">
+                                                                        ${icons.Trash(18)}
+                                                                    </button>
+                                                                </div>
+                                                            ` : ''}
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                            `}
+                                        </div>
+                                    ` : `
+                                        <div class="text-center py-20 tech-box-bg rounded-2xl shadow-2xl border-4 border-[#00f2ff]/50">
+                                            ${icons.ChevronRight(64)} <h3 class="text-3xl font-bold neon-text-cyan mt-6">ACCESS DENIED: LOGIN REQUIRED</h3>
+                                            <p class="text-gray-500 mt-3 text-lg">Please use the Access Portal to view the content feed.</p>
+                                            <button id="showLoginBtn_gated" class="mt-8 flex items-center gap-2 upload-gradient text-white px-8 py-3 rounded-xl hover:opacity-90 transition text-lg font-bold mx-auto shadow-lg transform hover:scale-[1.05]">
+                                                ${icons.ChevronRight(20)} ACCESS PORTAL NOW
+                                            </button>
+                                        </div>
+                                    `}
+                                </div>
                             `}
                         </div>
                     </div>
                 `;
             }
 
+            // --- NEW: CMatrix helper function ---
+            renderCMatrix() {
+                // This function starts CMatrix and returns an empty string
+                CMatrix.start();
+                return ''; 
+            }
+
             // --- CORRECTED RENDER LOGIN MODAL FUNCTION ---
             renderLoginModal() {
                  return `
-                    <div class="fixed inset-0 bg-gray-900 bg-opacity-95 backdrop-blur-md flex items-center justify-center z-50">
+                    ${this.renderCMatrix()} <div class="fixed inset-0 bg-gray-900 bg-opacity-95 backdrop-blur-md flex items-center justify-center z-50">
                         <div class="bg-[#1a1b26] rounded-3xl shadow-2xl shadow-cyan-500/50 p-6 sm:p-10 w-11/12 max-w-md relative transform transition-all scale-100 duration-300 tech-border border-[#00f2ff] animate-pulse-shadow">
-                            <button id="closeLogin" class="absolute top-5 right-5 text-gray-400 hover:text-[#00f2ff] text-3xl transition">×</button>
+                            <button id="closeLogin" class="absolute top-5 right-5 text-gray-400 hover:text-[#00f2ff] text-3xl transition z-10">×</button>
                             
                             <div class="text-center mb-10">
                                 <h1 class="text-4xl font-extrabold neon-text-cyan mb-2 tracking-widest">LOGIN_INTERFACE</h1>
@@ -1077,6 +1197,7 @@
                 if (this.state.showLogin) {
                     root.innerHTML = this.renderLoginModal();
                 } else {
+                    CMatrix.stop(); // Ensure matrix is stopped if not on login
                     root.innerHTML = this.renderMainPage();
                 }
 
@@ -1098,8 +1219,9 @@
             }
 
             attachEventListeners() {
+                // MODIFIED: Added CMatrix.stop() to close button
                 const closeLogin = document.getElementById('closeLogin');
-                if (closeLogin) closeLogin.onclick = () => { this.state.showLogin = false; this.render(); };
+                if (closeLogin) closeLogin.onclick = () => { this.state.showLogin = false; CMatrix.stop(); this.render(); };
 
                 const showLoginBtn = document.getElementById('showLoginBtn');
                 const showLoginBtnGated = document.getElementById('showLoginBtn_gated');
@@ -1130,11 +1252,10 @@
                     }
                 };
                 
-                // 🚀 FIX APPLIED HERE: Notice Delete Buttons
+                // Notice Delete Buttons
                 document.querySelectorAll('[data-delete-notice]').forEach(btn => {
                     btn.onclick = () => {
                         const noticeId = parseInt(btn.getAttribute('data-delete-notice'));
-                        // Ensure parseInt works correctly
                         if (isNaN(noticeId)) {
                              console.error("Invalid notice ID for deletion.");
                              return;
@@ -1164,19 +1285,42 @@
                 if (passwordInput) passwordInput.oninput = (e) => { this.state.password = e.target.value; };
 
                 const fileInput = document.getElementById('fileInput');
-                // MODIFIED: Calls handleFileUpload with the selected file and current tab type
                 if (fileInput) fileInput.onchange = (e) => this.handleFileUpload(e.target.files[0], this.state.currentTab === 'memories' ? 'memory' : 'meme');
 
+                // MODIFIED: Tab switching logic for animation
                 document.querySelectorAll('[data-tab]').forEach(btn => {
                     btn.onclick = () => {
-                        this.state.currentTab = btn.getAttribute('data-tab');
-                        if (this.state.currentTab !== 'notices') {
-                             this.loadAllData();
-                        } else {
-                            this.loadNotices();
+                        const newTab = btn.getAttribute('data-tab');
+                        // Only re-render if the tab is actually changing
+                        if (this.state.currentTab !== newTab) {
+                            this.state.currentTab = newTab;
+                            
+                            // Remove animation class before re-rendering
+                            const gatedSection = document.getElementById('gated-section-container');
+                            if (gatedSection) {
+                                gatedSection.classList.remove('content-transition'); 
+                            }
+                            const noticesContent = document.getElementById('notices-content');
+                            if (noticesContent) {
+                                noticesContent.classList.remove('content-transition'); 
+                            }
+                            
+                            this.render(); // Re-render the UI
                         }
-                        this.render();
                     };
+                });
+                
+                // MODIFIED: Added requestAnimationFrame to re-add transition class
+                // This ensures the animation plays on tab switch
+                requestAnimationFrame(() => {
+                    const gatedSection = document.getElementById('gated-section-container');
+                    if (gatedSection) {
+                        gatedSection.classList.add('content-transition');
+                    }
+                    const noticesContent = document.getElementById('notices-content');
+                    if (noticesContent) {
+                        noticesContent.classList.add('content-transition');
+                    }
                 });
                 
                 document.querySelectorAll('[data-scroll]').forEach(btn => {
@@ -1213,7 +1357,7 @@
             // Auto-scroll and manual scroll functions (omitted for brevity, they are unchanged)
             scrollMemes(direction) { 
                 const container = document.getElementById('meme-scroll-container');
-                if (!container) return;
+                if (!container || this.state.hallOfFameMemes.length === 0) return;
                 const totalItems = this.state.hallOfFameMemes.length;
                 let newIndex = this.state.memeScrollIndex;
 
@@ -1229,7 +1373,7 @@
 
             scrollMemories(direction) { 
                 const container = document.getElementById('memory-scroll-container');
-                if (!container) return;
+                if (!container || this.state.hallOfFameMemories.length === 0) return;
                 const totalItems = this.state.hallOfFameMemories.length;
                 let newIndex = this.state.memoryScrollIndex;
 
@@ -1246,14 +1390,14 @@
             startAutoScroll() {
                 if (this.memeScrollInterval) clearInterval(this.memeScrollInterval);
                 this.memeScrollInterval = setInterval(() => {
-                    if (this.state.currentTab === 'memes') {
+                    if (this.state.currentTab === 'memes' && !this.state.showLogin) {
                         this.scrollMemes('next');
                     }
                 }, 5000);
 
                 if (this.memoryScrollInterval) clearInterval(this.memoryScrollInterval);
                 this.memoryScrollInterval = setInterval(() => {
-                    if (this.state.currentTab === 'memories') {
+                    if (this.state.currentTab === 'memories' && !this.state.showLogin) {
                         this.scrollMemories('next');
                     }
                 }, 5000);
