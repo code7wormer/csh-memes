@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSH Meme Gallery - BT25CSH</title>
+    <title>CSH Meme Gallery - BT25CSH (Supabase)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
@@ -14,27 +14,17 @@
     <div id="root"></div>
 
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        
-        // Firebase Storage imports are removed as requested
+        // --- SUPABASE CLIENT IMPORT ---
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyB7eRfEYcEVkudLbANLJXFR1q5z9weJuIs",
-            authDomain: "csh-memes.firebaseapp.com",
-            projectId: "csh-memes",
-            storageBucket: "csh-memes.appspot.com",
-            messagingSenderId: "1044239899607",
-            appId: "1:1044239899607:web:ba89f70716487e001e4992",
-            measurementId: "G-RY1YE3HL4B"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        // =================================================================
+        // !!! 🚨 ACTION REQUIRED: REPLACE THESE PLACEHOLDERS 🚨 !!!
+        // =================================================================
+        const supabaseUrl = 'YOUR_SUPABASE_PROJECT_URL'; 
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzcGJmZ21mc3phZHBiZWdtb3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTg3MTMsImV4cCI6MjA3NzU5NDcxM30.Phjr2R8e22YH8PNUCP0Ls-_gE8pSRIFel34bvbJCUoQ'; 
+        // =================================================================
         
-        // Firebase Storage initialization is removed
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
         // Lucide Icons (unchanged)
         const icons = {
@@ -48,7 +38,7 @@
             ChevronRight: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`
         };
 
-        // --- MODIFICATION: Aggressive compression to return Base64 string ---
+        // Compress image to a Blob (required for Supabase Storage upload)
         function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -59,8 +49,7 @@
                         let width = img.width;
                         let height = img.height;
                         
-                        // AGGRESSIVE: Target Max Dimension is 800px
-                        const maxDimension = 800; 
+                        const maxDimension = 1200; 
                         if (width > maxDimension || height > maxDimension) {
                             if (width > height) {
                                 height = (height / width) * maxDimension;
@@ -76,23 +65,23 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
                         
-                        // Revert to Base64 output with low quality (0.5)
-                        const base64Image = canvas.toDataURL('image/jpeg', 0.5); 
-
-                        // Calculate size of Base64 string (which is stored as text in Firestore)
-                        const sizeInBytes = (base64Image.length * 0.75) - (base64Image.match(/=/g) || []).length;
-                        
-                        // Firestore limit is 1MB (1,048,576 bytes). We use a margin.
-                        if (sizeInBytes > 950000) { 
-                            reject(new Error('Image too large after compression (' + (sizeInBytes / 1024).toFixed(1) + 'KB). Please try a smaller or simpler image.'));
-                        } else {
-                            resolve(base64Image); // Resolve with the Base64 data
-                        }
+                        canvas.toBlob(
+                            (blob) => {
+                                if (blob) {
+                                    resolve(blob);
+                                } else {
+                                    reject(new Error('Canvas to Blob conversion failed'));
+                                }
+                            },
+                            'image/jpeg',
+                            0.7
+                        );
                     };
                     img.onerror = reject;
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
+                    img.src = e.target.result;
                 };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
             });
         }
 
@@ -113,7 +102,8 @@
                     loading: true,
                     error: '',
                     uploadStatus: '',
-                    firebaseReady: false,
+                    // Supabase doesn't need anonymous auth for public reads/writes
+                    firebaseReady: true, 
                     memeScrollIndex: 0,
                     memoryScrollIndex: 0
                 };
@@ -123,58 +113,45 @@
             }
 
             async init() {
-                await this.authenticateAnonymously();
+                // Supabase doesn't need explicit anonymous auth like Firebase
                 await this.loadAllData();
                 this.render();
-                this.setupRealtimeListeners();
+                // Realtime is not strictly necessary for this simple gallery, 
+                // we will rely on full reloads for data updates
+                // this.setupRealtimeListeners(); 
                 this.startAutoScroll();
             }
 
-            async authenticateAnonymously() {
-                try {
-                    await signInAnonymously(auth);
-                    this.state.firebaseReady = true;
-                } catch (error) {
-                    console.error('Firebase auth error:', error);
-                }
-            }
-
-            setupRealtimeListeners() {
-                onSnapshot(query(collection(db, 'hall-of-fame-memes'), orderBy('timestamp', 'desc')), (snapshot) => {
-                    this.state.hallOfFameMemes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.state.loading = false;
-                    this.render();
-                });
-
-                onSnapshot(query(collection(db, 'hall-of-fame-memories'), orderBy('timestamp', 'desc')), (snapshot) => {
-                    this.state.hallOfFameMemories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.render();
-                });
-
-                onSnapshot(query(collection(db, 'memes'), orderBy('timestamp', 'desc')), (snapshot) => {
-                    this.state.memes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.render();
-                });
-
-                onSnapshot(query(collection(db, 'memories'), orderBy('timestamp', 'desc')), (snapshot) => {
-                    this.state.memories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.render();
-                });
-            }
+            // async setupRealtimeListeners() { ... } // Removed Firebase Realtime
 
             async loadAllData() {
+                this.state.loading = true;
+                
+                const fetch = async (table) => {
+                    // Supabase equivalent of Firebase query and getDocs
+                    const { data, error } = await supabase
+                        .from(table)
+                        .select('id, imageUrl, uploadedBy, timestamp') 
+                        .order('timestamp', { ascending: false });
+                    if (error) {
+                        console.error(`Error loading ${table}:`, error);
+                        return [];
+                    }
+                    return data;
+                };
+
                 try {
                     const [hofMemes, hofMemories, memes, memories] = await Promise.all([
-                        getDocs(query(collection(db, 'hall-of-fame-memes'), orderBy('timestamp', 'desc'))),
-                        getDocs(query(collection(db, 'hall-of-fame-memories'), orderBy('timestamp', 'desc'))),
-                        getDocs(query(collection(db, 'memes'), orderBy('timestamp', 'desc'))),
-                        getDocs(query(collection(db, 'memories'), orderBy('timestamp', 'desc')))
+                        fetch('hall_of_fame_memes'),
+                        fetch('hall_of_fame_memories'),
+                        fetch('memes'),
+                        fetch('memories')
                     ]);
                     
-                    this.state.hallOfFameMemes = hofMemes.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.state.hallOfFameMemories = hofMemories.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.state.memes = memes.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.state.memories = memories.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    this.state.hallOfFameMemes = hofMemes;
+                    this.state.hallOfFameMemories = hofMemories;
+                    this.state.memes = memes;
+                    this.state.memories = memories;
                 } catch (err) {
                     console.log('Error loading data:', err);
                 }
@@ -223,29 +200,39 @@
                 }
             }
 
+            // --- CLIENT-SIDE ONLY LOGIN IMPLEMENTATION ---
             handleLogin(e) {
                 e.preventDefault();
                 this.state.error = '';
 
                 const emailLower = this.state.email.toLowerCase().trim();
+                const password = this.state.password;
                 const emailRegex = /^bt25csh\d{3}@iiitn\.ac\.in$/i;
 
-                if (emailLower === 'bt25csh050@iiitn.ac.in' && this.state.password === 'wushangclanssSS11!!') {
-                    this.state.isLoggedIn = true;
-                    this.state.isAdmin = true;
-                    this.state.userEmail = emailLower;
-                    this.state.showLogin = false;
-                } else if (emailRegex.test(emailLower) && this.state.password === 'cshthegoat') {
-                    this.state.isLoggedIn = true;
-                    this.state.isAdmin = false;
-                    this.state.userEmail = emailLower;
-                    this.state.showLogin = false;
-                } else {
-                    this.state.error = 'Invalid credentials. Check your email format and password.';
+                let expectedPassword = null;
+
+                if (emailLower === 'bt25csh050@iiitn.ac.in') {
+                    expectedPassword = 'wushangclanssSS11!!';
+                } else if (emailRegex.test(emailLower)) {
+                    expectedPassword = 'cshthegoat';
                 }
+
+                if (!expectedPassword || password !== expectedPassword) {
+                    this.state.error = 'Invalid credentials. Check your email format and password.';
+                    this.render();
+                    return;
+                }
+                
+                // Set client state based on successful password check
+                this.state.isLoggedIn = true;
+                this.state.isAdmin = (emailLower === 'bt25csh050@iiitn.ac.in');
+                this.state.userEmail = emailLower; 
+                this.state.showLogin = false;
+                
                 this.render();
             }
 
+            // --- CLIENT-SIDE LOGOUT IMPLEMENTATION ---
             handleLogout() {
                 this.state.isLoggedIn = false;
                 this.state.isAdmin = false;
@@ -255,70 +242,99 @@
                 this.render();
             }
 
-            // --- MODIFICATION: Reverted to saving Base64 data to Firestore ---
+            // --- SUPABASE STORAGE UPLOAD (Relies on Public Write) ---
             async handleFileUpload(file, type) {
                 if (!file) return;
-
                 if (!file.type.startsWith('image/')) {
-                    this.state.uploadStatus = 'Please upload an image file';
-                    this.render();
-                    return;
+                    this.state.uploadStatus = 'Please upload an image file'; this.render(); return;
+                }
+                if (file.size > 5 * 1024 * 1024) { 
+                    this.state.uploadStatus = 'Original image must be less than 5MB'; this.render(); return;
                 }
 
-                if (file.size > 5 * 1024 * 1024) { // 5MB limit for original file
-                    this.state.uploadStatus = 'Original image must be less than 5MB';
-                    this.render();
-                    return;
-                }
-
-                this.state.uploadStatus = 'Compressing image...';
-                this.render();
+                this.state.uploadStatus = 'Compressing image...'; this.render();
 
                 try {
-                    // Get the Base64 data (aggressive compression applies here)
-                    const compressedBase64Data = await compressImage(file);
+                    // Compress image to a Blob
+                    const compressedBlob = await compressImage(file);
                     
-                    this.state.uploadStatus = 'Saving to gallery...';
-                    this.render();
+                    this.state.uploadStatus = 'Uploading to storage...'; this.render();
 
                     const timestamp = Date.now();
                     const collectionName = type === 'memory' ? 'memories' : 'memes';
+                    // Use a standard file path convention: bucket/collection/timestamp-filename
+                    const fileName = `${collectionName}/${timestamp}-${file.name}`;
                     
-                    // Save the Base64 data to Firestore
-                    await addDoc(collection(db, collectionName), {
-                        imageData: compressedBase64Data, // <-- Storing Base64 Data
-                        uploadedBy: this.state.userEmail,
-                        timestamp: timestamp,
-                        fileName: file.name
-                    });
+                    // 1. Upload the image file to Supabase Storage (requires public INSERT policy)
+                    const { error: storageError } = await supabase.storage
+                        .from('gallery')
+                        .upload(fileName, compressedBlob, {
+                            // Supabase storage options
+                            cacheControl: '3600',
+                            upsert: false
+                        });
 
+                    if (storageError) throw storageError;
+
+                    // 2. Get the public URL for the uploaded file
+                    const { data: publicUrlData } = supabase.storage
+                        .from('gallery')
+                        .getPublicUrl(fileName);
+                    
+                    const downloadURL = publicUrlData.publicUrl;
+
+                    this.state.uploadStatus = 'Saving metadata to database...'; this.render();
+
+                    // 3. Save the URL and the user's email to the Supabase Database table 
+                    // (requires RLS to be DISABLED on the table)
+                    const { error: dbError } = await supabase
+                        .from(collectionName)
+                        .insert([
+                            { 
+                                imageUrl: downloadURL, // Store the URL, not the image data
+                                uploadedBy: this.state.userEmail, 
+                                timestamp: timestamp
+                            }
+                        ]);
+
+                    if (dbError) throw dbError;
+                    
                     this.state.uploadStatus = `${type === 'memory' ? 'Memory' : 'Meme'} uploaded successfully! 🎉`;
+                    this.loadAllData();
                     setTimeout(() => {
                         this.state.uploadStatus = '';
                         this.render();
                     }, 3000);
+
                 } catch (err) {
-                    // Display the compression failure error message
-                    this.state.uploadStatus = `Upload failed: ${err.message}`;
+                    this.state.uploadStatus = `Upload failed: ${err.message}. Check RLS/Storage policies.`;
                     console.error('Upload error:', err);
                 }
                 this.render();
             }
 
-            // --- MODIFICATION: Update to move the Base64 data, not the URL ---
+            // --- SUPABASE PROMOTION/DELETION (Relies on Public Delete) ---
             async promoteToHallOfFame(item, type) {
                 try {
-                    const hofCollection = type === 'memory' ? 'hall-of-fame-memories' : 'hall-of-fame-memes';
-                    const sourceCollection = type === 'memory' ? 'memories' : 'memes';
+                    const hofTable = type === 'memory' ? 'hall_of_fame_memories' : 'hall_of_fame_memes';
+                    const sourceTable = type === 'memory' ? 'memories' : 'memes';
 
-                    await addDoc(collection(db, hofCollection), {
-                        imageData: item.imageData, // <-- Use Base64 data
-                        uploadedBy: item.uploadedBy,
-                        timestamp: item.timestamp,
-                        fileName: item.fileName
-                    });
+                    // 1. Insert into Hall of Fame table (requires RLS to be DISABLED)
+                    await supabase
+                        .from(hofTable)
+                        .insert([{ 
+                            imageUrl: item.imageUrl,
+                            uploadedBy: item.uploadedBy,
+                            timestamp: item.timestamp
+                        }]);
 
-                    await deleteDoc(doc(db, sourceCollection, item.id));
+                    // 2. Delete from source table (requires RLS to be DISABLED)
+                    await supabase
+                        .from(sourceTable)
+                        .delete()
+                        .eq('id', item.id);
+                    
+                    this.loadAllData();
                 } catch (err) {
                     console.error('Failed to promote:', err);
                 }
@@ -326,8 +342,14 @@
 
             async removeFromHallOfFame(itemId, type) {
                 try {
-                    const hofCollection = type === 'memory' ? 'hall-of-fame-memories' : 'hall-of-fame-memes';
-                    await deleteDoc(doc(db, hofCollection, itemId));
+                    const hofTable = type === 'memory' ? 'hall_of_fame_memories' : 'hall_of_fame_memes';
+                    // Delete from Hall of Fame table (requires RLS to be DISABLED)
+                    await supabase
+                        .from(hofTable)
+                        .delete()
+                        .eq('id', itemId);
+                    
+                    this.loadAllData();
                 } catch (err) {
                     console.error('Failed to remove:', err);
                 }
@@ -378,7 +400,6 @@
                 `;
             }
 
-            // --- MODIFICATION: Load image from item.imageData ---
             renderScrollingHallOfFame(items, type) {
                 if (items.length === 0) {
                     return `
@@ -401,7 +422,7 @@
                                 ${items.map(item => `
                                     <div class="min-w-full px-2">
                                         <div class="bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-lg border-4 ${borderColor} relative max-w-3xl mx-auto">
-                                            <img src="${item.imageData}" alt="Hall of Fame" class="w-full h-96 object-contain bg-white">
+                                            <img src="${item.imageUrl}" alt="Hall of Fame" class="w-full h-96 object-contain bg-white">
                                             <div class="p-6">
                                                 <p class="text-base text-gray-700">By: <span class="font-semibold">${item.uploadedBy}</span></p>
                                                 <p class="text-sm text-gray-600">${new Date(item.timestamp).toLocaleDateString()}</p>
@@ -428,7 +449,6 @@
                 `;
             }
 
-            // --- MODIFICATION: Load image from item.imageData ---
             renderMainPage() {
                 const currentData = this.state.currentTab === 'memes' 
                     ? { hall: this.state.hallOfFameMemes, regular: this.state.memes, type: 'meme' }
@@ -508,7 +528,7 @@
                                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                             ${currentData.regular.map(item => `
                                                 <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition relative">
-                                                    <img src="${item.imageData}" alt="${currentData.type}" class="w-full h-64 object-contain bg-gray-100">
+                                                    <img src="${item.imageUrl}" alt="${currentData.type}" class="w-full h-64 object-contain bg-gray-100">
                                                     <div class="p-4">
                                                         <p class="text-sm text-gray-700">By: <span class="font-semibold">${item.uploadedBy}</span></p>
                                                         <p class="text-xs text-gray-600">${new Date(item.timestamp).toLocaleDateString()}</p>
@@ -555,6 +575,7 @@
                 document.querySelectorAll('[data-tab]').forEach(btn => {
                     btn.onclick = () => {
                         this.state.currentTab = btn.getAttribute('data-tab');
+                        this.loadAllData(); // Reloads data for the new tab
                         this.render();
                     };
                 });
