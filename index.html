@@ -596,7 +596,8 @@
                                     const bgColor = isTop ? 'bg-indigo-600 text-white shadow-2xl ring-4 ring-indigo-300/50' : 'bg-white text-gray-800 shadow-lg border border-gray-200 hover:shadow-xl';
                                     const headerColor = isTop ? 'text-indigo-200' : 'text-indigo-600';
                                     
-                                    const dateObj = new Date(notice.timestamp);
+                                    // NEW, safer block for BigInt timestamps:
+                                    const dateObj = new Date(Number(notice.timestamp)); // Convert the BigInt/Number to a Date object
                                     const timestamp = dateObj.toLocaleDateString('en-US', {
                                         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                                     });
