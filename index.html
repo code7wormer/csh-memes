@@ -112,6 +112,7 @@
             columns: [],
             stop() {
                 if (this.interval) clearInterval(this.interval);
+                this.interval = null; // Important: Clear the interval state
                 this.container = null;
                 this.columns = [];
                 const oldContainer = document.getElementById('cmatrix-background');
@@ -157,7 +158,8 @@
 
                         ctx.fillText(text, x, y);
 
-                        if(y * font_size > height && Math.random() > 0.975) { // Adjusted condition to prevent drops from getting too long
+                        // FIX: Changed y * font_size back to y, as y already includes font_size multiplication
+                        if(y > height && Math.random() > 0.975) { 
                             drops[i] = 0;
                         }
                         drops[i]++;
@@ -255,7 +257,7 @@
                     console.error('Error loading notices:', error);
                 }
                 this.state.notices = data || [];
-                this.render(); 
+                // Do NOT call render here, init() calls render() later
             }
 
             async loadAllData() {
@@ -289,7 +291,7 @@
                     console.log('Error loading data:', err);
                 }
                 this.state.loading = false;
-                this.render(); 
+                // Do NOT call render here, init() calls render() later
             }
 
             // --- REVISED LOGIN LOGIC ---
@@ -335,7 +337,7 @@
                 this.state.isNoticesAdmin = isNoticesAdminCheck;
                 this.state.userEmail = emailLower; 
                 this.state.showLogin = false;
-                CMatrix.stop(); // Stop C-Matrix
+                CMatrix.stop(); // Stop C-Matrix on successful login
                 
                 this.render();
                 // Trigger sparkle effect on successful login
@@ -493,7 +495,7 @@
                         <div class="flex items-center gap-3 mb-6">
                             ${isMemeTab ? icons.Image(36) : icons.Heart(36)}
                             <h2 class="text-3xl font-extrabold ${isMemeTab ? 'neon-text-pink' : 'neon-text-cyan'} tracking-tight">HALL OF GLORY // ARCHIVES</h2>
-                            <span class="text-sm text-gray-500 ml-auto">${isMemeTab ? 'Our Generation's Poetry' : 'Pixelated Happiness'}</span>
+                            <span class="text-sm text-gray-500 ml-auto">${isMemeTab ? 'Our Generation's Poetry' : 'Pixelated Journals'}</span>
                         </div>
                         ${this.state.loading ? `
                             <div class="text-center py-12 tech-box-bg rounded-2xl shadow-lg"><p class="text-gray-400">Loading Data...</p></div>
@@ -637,7 +639,7 @@
                             
                             <div class="text-center mb-10">
                                 <h1 class="text-4xl font-extrabold neon-text-cyan mb-2 tracking-widest">LOGIN INTERFACE</h1>
-                                <p class="text-gray-500 text-lg">Input Hub Credentials.</p>
+                                <p class="text-gray-500 text-lg">Input CSH Hub Credentials.</p>
                             </div>
 
                             <form id="loginForm" class="space-y-6">
@@ -663,7 +665,7 @@
             }
 
             renderCMatrix() {
-                // This function is just a placeholder. The actual CMatrix starts in the JS class.
+                // This function starts the C-Matrix effect when the modal is rendered
                 CMatrix.start();
                 return ''; 
             }
@@ -728,7 +730,7 @@
                 if (this.state.showLogin) {
                     root.innerHTML = this.renderLoginModal();
                 } else {
-                    CMatrix.stop(); // Stop C-Matrix if not showing login
+                    // FIX: Removed CMatrix.stop() here to prevent potential errors on initial page load
                     root.innerHTML = this.renderMainPage();
                 }
 
@@ -753,6 +755,7 @@
             attachEventListeners() {
                 // Login/Logout Handlers
                 const closeLogin = document.getElementById('closeLogin');
+                // FIX: Added CMatrix.stop() on close
                 if (closeLogin) closeLogin.onclick = () => { this.state.showLogin = false; CMatrix.stop(); this.render(); };
 
                 const showLogin = () => { this.state.showLogin = true; this.render(); };
@@ -805,9 +808,6 @@
                     }
                 });
 
-                // Scroll, Promote, Delete Handlers (implementation omitted for brevity)
-                // You should ensure all your custom button handlers are attached here.
-                
                 // Example for scroll buttons (re-added for functionality)
                 document.querySelectorAll('[data-scroll]').forEach(btn => {
                     btn.onclick = () => {
