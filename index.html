@@ -1,579 +1,667 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSH Meme Gallery - BT25CSH</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
-        .scroll-container { scroll-behavior: smooth; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CSH Gallery — BT25CSH</title>
+
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js"></script>
+
+  <!-- Utilities -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* small extra styles */
+    .blob { filter: blur(32px); mix-blend-mode: screen; opacity: .9; }
+    .card-glow { box-shadow: 0 10px 40px rgba(0,0,0,0.35); }
+    .scroll-snap { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+    .snap-child { scroll-snap-align: center; }
+  </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-700 to-pink-600 text-white antialiased">
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  <!-- Animated background blobs -->
+  <div aria-hidden class="fixed inset-0 -z-10 pointer-events-none">
+    <div class="absolute left-6 top-6 w-72 h-72 rounded-full bg-pink-400 blob opacity-30 animate-[blob1_10s_infinite]"></div>
+    <div class="absolute right-12 top-20 w-96 h-96 rounded-full bg-indigo-400 blob opacity-25 animate-[blob2_12s_infinite]"></div>
+    <div class="absolute left-1/3 bottom-6 w-72 h-72 rounded-full bg-yellow-300 blob opacity-20 animate-[blob3_11s_infinite]"></div>
+  </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyB7eRfEYcEVkudLbANLJXFR1q5z9weJuIs",
-            authDomain: "csh-memes.firebaseapp.com",
-            projectId: "csh-memes",
-            storageBucket: "csh-memes.firebasestorage.app",
-            messagingSenderId: "1044239899607",
-            appId: "1:1044239899607:web:ba89f70716487e001e4992",
-            measurementId: "G-RY1YE3HL4B"
+  <!-- Top nav -->
+  <header class="max-w-7xl mx-auto p-6 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="p-2 rounded-2xl bg-white/10 backdrop-blur-sm">
+        <div class="text-2xl font-extrabold">CSH</div>
+      </div>
+      <div>
+        <div class="text-lg font-semibold">CSH Meme Gallery</div>
+        <div class="text-xs text-white/80">BT25CSH</div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button id="signInBtn" class="bg-white/10 px-4 py-2 rounded-full hover:bg-white/20 transition hidden">Sign In</button>
+      <div id="userBadge" class="px-3 py-2 rounded-full bg-white/10 hidden"></div>
+
+      <!-- Admin toolbar (shown only for admin user) -->
+      <div id="adminToolbar" class="flex gap-3 items-center">
+        <button id="downloadAllBtn" class="p-3 rounded-full bg-green-500 hover:bg-green-600 shadow-lg" title="Download all images (zip)">
+          <i data-lucide="download"></i>
+        </button>
+        <button id="clearAllBtn" class="p-3 rounded-full bg-red-500 hover:bg-red-600 shadow-lg" title="Backup then clear all">
+          <i data-lucide="trash-2"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main SPA container -->
+  <main class="max-w-6xl mx-auto p-6">
+    <!-- Tabs -->
+    <div class="flex gap-3 mb-6">
+      <button id="tabMemes" class="px-6 py-3 rounded-full bg-white/20 hover:bg-white/30 font-semibold">Memes</button>
+      <button id="tabMemories" class="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 font-semibold">Memories</button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Left / center: Hall of Fame & Grid -->
+      <section class="lg:col-span-2 space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-bold">Hall of Fame</h2>
+            <p class="text-sm text-white/80">Top picks from the batch (auto-rotating)</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="hofPrev" class="p-2 rounded-full bg-white/10">◀</button>
+            <button id="hofNext" class="p-2 rounded-full bg-white/10">▶</button>
+          </div>
+        </div>
+
+        <!-- Hall of Fame carousel -->
+        <div id="hofContainer" class="w-full bg-white/5 rounded-2xl p-4 overflow-hidden card-glow">
+          <div id="hofScroller" class="flex gap-6 overflow-x-auto scroll-snap py-6">
+            <!-- populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Upload status & grid -->
+        <div id="uploadArea" class="bg-white/5 p-4 rounded-2xl">
+          <div id="uploadCard" class="hidden md:flex items-center justify-between gap-4">
+            <div>
+              <div class="text-lg font-bold">Upload</div>
+              <div class="text-sm text-white/80">Logged-in members may upload images</div>
+            </div>
+            <div class="flex gap-3">
+              <label class="cursor-pointer">
+                <input id="fileInput" type="file" accept="image/*" class="hidden" />
+                <div class="px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 to-yellow-400 text-black font-semibold">Choose Image</div>
+              </label>
+              <div id="uploadStatus" class="text-sm hidden"></div>
+            </div>
+          </div>
+
+          <!-- grid of items (visible when logged in) -->
+          <div id="itemsGridWrap" class="mt-6">
+            <h3 class="text-lg font-semibold mb-3 hidden" id="itemsTitle">All items</h3>
+            <div id="itemsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <!-- cards appended here -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: sidebar -->
+      <aside class="space-y-6">
+        <div class="bg-white/6 p-4 rounded-2xl">
+          <h4 class="font-bold">Quick Upload</h4>
+          <p class="text-xs text-white/80 mb-3">Only for signed-in members</p>
+          <div>
+            <label class="w-full block">
+              <input id="quickFile" type="file" accept="image/*" class="hidden">
+              <div id="quickBtn" class="py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-pink-500 text-center text-white font-semibold cursor-pointer">Choose & Upload</div>
+            </label>
+            <div id="quickStatus" class="mt-3 text-sm"></div>
+          </div>
+        </div>
+
+        <div class="bg-white/6 p-4 rounded-2xl">
+          <h5 class="font-bold">Top picks (thumbnails)</h5>
+          <div id="topThumbs" class="mt-3 grid grid-cols-3 gap-2"></div>
+        </div>
+
+        <div class="bg-white/6 p-4 rounded-2xl text-sm text-white/80">
+          Made with ❤️ for BT25CSH — college vibes
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Login modal -->
+  <div id="modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center">
+    <div class="bg-white/90 rounded-2xl p-6 w-80 text-black">
+      <h3 class="text-xl font-bold mb-2">Sign in</h3>
+      <input id="email" type="email" placeholder="email" class="w-full p-2 rounded mb-2" />
+      <input id="password" type="password" placeholder="password" class="w-full p-2 rounded mb-4" />
+      <div class="flex gap-2">
+        <button id="doSignIn" class="flex-1 py-2 rounded bg-indigo-600 text-white">Sign in</button>
+        <button id="closeModal" class="flex-1 py-2 rounded bg-gray-200">Cancel</button>
+      </div>
+      <div class="text-xs text-red-600 mt-2 hidden" id="modalError"></div>
+      <div class="text-xs text-gray-600 mt-3">Admin is <code>bt25csh050@iiitn.ac.in</code></div>
+    </div>
+  </div>
+
+  <!-- small notifications area -->
+  <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-8 z-50 hidden">
+    <div class="bg-black/80 text-white px-4 py-2 rounded-xl"></div>
+  </div>
+
+  <script>
+    // ---------- PASTE YOUR FIREBASE CONFIG HERE ----------
+    // Replace the object below with your real firebaseConfig object
+    const firebaseConfig = {
+  apiKey: "AIzaSyB7eRfEYcEVkudLbANLJXFR1q5z9weJuIs",
+
+  authDomain: "csh-memes.firebaseapp.com",
+
+  projectId: "csh-memes",
+
+  storageBucket: "csh-memes.firebasestorage.app",
+
+  messagingSenderId: "1044239899607",
+
+  appId: "1:1044239899607:web:ba89f70716487e001e4992",
+
+  measurementId: "G-RY1YE3HL4B"
+
+    };
+    // ----------------------------------------------------
+
+    // Basic checks
+    if (!firebaseConfig || !firebaseConfig.apiKey) {
+      console.warn('Firebase config is missing. Paste your firebaseConfig into the file to enable backend features.');
+    }
+
+    // Initialize lucide icons
+    lucide.createIcons();
+
+    // Firebase init (only if config provided)
+    let app = null, db = null, auth = null;
+    if (firebaseConfig && firebaseConfig.apiKey) {
+      app = firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      auth = firebase.auth();
+    }
+
+    // convenience
+    const $ = selector => document.querySelector(selector);
+    const $all = selector => Array.from(document.querySelectorAll(selector));
+
+    // UI refs
+    const signInBtn = $('#signInBtn');
+    const userBadge = $('#userBadge');
+    const adminToolbar = $('#adminToolbar');
+    const downloadAllBtn = $('#downloadAllBtn');
+    const clearAllBtn = $('#clearAllBtn');
+    const modal = $('#modal');
+    const doSignIn = $('#doSignIn');
+    const closeModal = $('#closeModal');
+    const emailInput = $('#email');
+    const passwordInput = $('#password');
+    const modalError = $('#modalError');
+    const fileInput = $('#fileInput');
+    const quickFile = $('#quickFile');
+    const quickBtn = $('#quickBtn');
+    const quickStatus = $('#quickStatus');
+    const uploadStatus = $('#uploadStatus');
+    const itemsGrid = $('#itemsGrid');
+    const itemsTitle = $('#itemsTitle');
+    const itemsGridWrap = $('#itemsGridWrap');
+    const hofScroller = $('#hofScroller');
+    const hofPrev = $('#hofPrev');
+    const hofNext = $('#hofNext');
+    const topThumbs = $('#topThumbs');
+    const toastEl = $('#toast');
+    const toastInner = toastEl.querySelector('div');
+
+    // State
+    let currentTab = 'memes';
+    let currentUser = null; // firebase user object
+    let isAdminMode = false;
+    const ADMIN_EMAIL = 'bt25csh050@iiitn.ac.in';
+    const collections = ['memes','memories','hall-of-fame-memes','hall-of-fame-memories'];
+
+    // helper toast
+    function toast(msg, t = 3000) {
+      toastInner.textContent = msg;
+      toastEl.classList.remove('hidden');
+      setTimeout(() => toastEl.classList.add('hidden'), t);
+    }
+
+    // small image compressor
+    function compressImage(file, maxDim=1200, quality=0.75) {
+      return new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = e => {
+          const img = new Image();
+          img.onload = () => {
+            let w = img.width, h = img.height;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+              else { w = Math.round(w * maxDim / h); h = maxDim; }
+            }
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, w);
+            c.height = Math.max(1, h);
+            const ctx = c.getContext('2d');
+            ctx.drawImage(img, 0, 0, c.width, c.height);
+            const data = c.toDataURL('image/jpeg', quality);
+            res(data);
+          };
+          img.onerror = rej;
+          img.src = e.target.result;
         };
+        fr.onerror = rej;
+        fr.readAsDataURL(file);
+      });
+    }
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+    // ---------- Firestore helpers ----------
+    async function fetchCollectionDocs(collName) {
+      if (!db) throw new Error('Firestore not initialized.');
+      const snap = await db.collection(collName).orderBy('timestamp','desc').get();
+      return snap.docs.map(d=>({ id: d.id, ...d.data() }));
+    }
 
-        // Lucide Icons as inline SVG
-        const icons = {
-            Upload: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
-            LogOut: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`,
-            Star: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
-            Image: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`,
-            Lock: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
-            Heart: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
-            ChevronLeft: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`,
-            ChevronRight: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`
-        };
+    async function deleteCollectionDocs(collName) {
+      if (!db) throw new Error('Firestore not initialized.');
+      const snap = await db.collection(collName).get();
+      for (const docSnap of snap.docs) {
+        await db.collection(collName).doc(docSnap.id).delete();
+      }
+    }
 
-        // Compress image before uploading
-        function compressImage(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        
-                        const maxDimension = 1200;
-                        if (width > maxDimension || height > maxDimension) {
-                            if (width > height) {
-                                height = (height / width) * maxDimension;
-                                width = maxDimension;
-                            } else {
-                                width = (width / height) * maxDimension;
-                                height = maxDimension;
-                            }
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        resolve(canvas.toDataURL('image/jpeg', 0.7));
-                    };
-                    img.onerror = reject;
-                    img.src = e.target.result;
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
+    // ---------- Rendering ----------
+    async function renderGrid() {
+      itemsGrid.innerHTML = '';
+      itemsTitle.classList.add('hidden');
+      itemsGridWrap.querySelectorAll('.no-data').forEach(n=>n.remove());
+      try {
+        const docs = await fetchCollectionDocs(currentTab);
+        if (docs.length === 0) {
+          const nodiv = document.createElement('div');
+          nodiv.className = 'col-span-full py-8 text-center text-white/80 no-data';
+          nodiv.textContent = 'No uploads yet — be the first!';
+          itemsGrid.appendChild(nodiv);
+          itemsTitle.classList.remove('hidden');
+          itemsTitle.textContent = `All ${currentTab}`;
+          return;
         }
-
-        class MemeGallery {
-            constructor() {
-                this.state = {
-                    isLoggedIn: false,
-                    isAdmin: false,
-                    userEmail: '',
-                    email: '',
-                    password: '',
-                    currentTab: 'memes',
-                    hallOfFameMemes: [],
-                    hallOfFameMemories: [],
-                    memes: [],
-                    memories: [],
-                    showLogin: false,
-                    loading: true,
-                    error: '',
-                    uploadStatus: '',
-                    firebaseReady: false,
-                    memeScrollIndex: 0,
-                    memoryScrollIndex: 0
-                };
-                this.memeScrollInterval = null;
-                this.memoryScrollInterval = null;
-                this.init();
-            }
-
-            async init() {
-                await this.authenticateAnonymously();
-                await this.loadAllData();
-                this.render();
-                this.setupRealtimeListeners();
-                this.startAutoScroll();
-            }
-
-            async authenticateAnonymously() {
-                try {
-                    await signInAnonymously(auth);
-                    this.state.firebaseReady = true;
-                } catch (error) {
-                    console.error('Firebase auth error:', error);
-                }
-            }
-
-            setupRealtimeListeners() {
-                onSnapshot(query(collection(db, 'hall-of-fame-memes'), orderBy('timestamp', 'desc')), (snapshot) => {
-                    this.state.hallOfFameMemes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.state.loading = false;
-                    this.render();
+        itemsTitle.classList.remove('hidden');
+        itemsTitle.textContent = `All ${currentTab}`;
+        docs.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'bg-white/5 rounded-2xl p-2';
+          const img = document.createElement('img');
+          img.src = item.imageData || item.image || '';
+          img.className = 'rounded-xl w-full h-48 object-contain bg-white';
+          const meta = document.createElement('div');
+          meta.className = 'mt-2 flex items-center justify-between';
+          meta.innerHTML = `<div>
+                              <div class="text-sm">${item.uploadedBy||'unknown'}</div>
+                              <div class="text-xs text-white/60">${item.timestamp ? new Date(item.timestamp).toLocaleDateString() : ''}</div>
+                            </div>`;
+          if (isAdminMode) {
+            const promBtn = document.createElement('button');
+            promBtn.className = 'px-3 py-1 rounded-full bg-yellow-400 text-black';
+            promBtn.textContent = 'Hall';
+            promBtn.onclick = async () => {
+              try {
+                await db.collection('hall-of-fame-' + currentTab).add({
+                  imageData: item.imageData || item.image,
+                  uploadedBy: item.uploadedBy || 'unknown',
+                  timestamp: item.timestamp || Date.now(),
+                  fileName: item.fileName || (item.id + '.jpg')
                 });
+                // optionally delete from source
+                await db.collection(currentTab).doc(item.id).delete();
+                toast('Promoted to Hall of Fame');
+                await renderGrid();
+                await renderHOF();
+              } catch (err) {
+                console.error(err);
+                toast('Failed to promote (permissions?)');
+              }
+            };
+            meta.appendChild(promBtn);
+          }
+          card.appendChild(img);
+          card.appendChild(meta);
+          itemsGrid.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+        const errN = document.createElement('div');
+        errN.className = 'col-span-full text-center';
+        errN.textContent = 'Unable to load items (check firebase config).';
+        itemsGrid.appendChild(errN);
+      }
+    }
 
-                onSnapshot(query(collection(db, 'hall-of-fame-memories'), orderBy('timestamp', 'desc')), (snapshot) => {
-                    this.state.hallOfFameMemories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.render();
-                });
-
-                onSnapshot(query(collection(db, 'memes'), orderBy('timestamp', 'desc')), (snapshot) => {
-                    this.state.memes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.render();
-                });
-
-                onSnapshot(query(collection(db, 'memories'), orderBy('timestamp', 'desc')), (snapshot) => {
-                    this.state.memories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.render();
-                });
-            }
-
-            async loadAllData() {
-                try {
-                    const [hofMemes, hofMemories, memes, memories] = await Promise.all([
-                        getDocs(query(collection(db, 'hall-of-fame-memes'), orderBy('timestamp', 'desc'))),
-                        getDocs(query(collection(db, 'hall-of-fame-memories'), orderBy('timestamp', 'desc'))),
-                        getDocs(query(collection(db, 'memes'), orderBy('timestamp', 'desc'))),
-                        getDocs(query(collection(db, 'memories'), orderBy('timestamp', 'desc')))
-                    ]);
-                    
-                    this.state.hallOfFameMemes = hofMemes.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.state.hallOfFameMemories = hofMemories.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.state.memes = memes.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    this.state.memories = memories.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                } catch (err) {
-                    console.log('Error loading data:', err);
-                }
-                this.state.loading = false;
-            }
-
-            startAutoScroll() {
-                this.memeScrollInterval = setInterval(() => {
-                    if (this.state.hallOfFameMemes.length > 1) {
-                        this.scrollMemes('next');
-                    }
-                }, 5000);
-
-                this.memoryScrollInterval = setInterval(() => {
-                    if (this.state.hallOfFameMemories.length > 1) {
-                        this.scrollMemories('next');
-                    }
-                }, 5000);
-            }
-
-            scrollMemes(direction) {
-                const maxIndex = Math.max(0, this.state.hallOfFameMemes.length - 1);
-                if (direction === 'next') {
-                    this.state.memeScrollIndex = (this.state.memeScrollIndex + 1) % this.state.hallOfFameMemes.length;
-                } else {
-                    this.state.memeScrollIndex = this.state.memeScrollIndex === 0 ? maxIndex : this.state.memeScrollIndex - 1;
-                }
-                const container = document.getElementById('meme-scroll-container');
-                if (container) {
-                    const width = container.offsetWidth;
-                    container.scrollTo({ left: width * this.state.memeScrollIndex, behavior: 'smooth' });
-                }
-            }
-
-            scrollMemories(direction) {
-                const maxIndex = Math.max(0, this.state.hallOfFameMemories.length - 1);
-                if (direction === 'next') {
-                    this.state.memoryScrollIndex = (this.state.memoryScrollIndex + 1) % this.state.hallOfFameMemories.length;
-                } else {
-                    this.state.memoryScrollIndex = this.state.memoryScrollIndex === 0 ? maxIndex : this.state.memoryScrollIndex - 1;
-                }
-                const container = document.getElementById('memory-scroll-container');
-                if (container) {
-                    const width = container.offsetWidth;
-                    container.scrollTo({ left: width * this.state.memoryScrollIndex, behavior: 'smooth' });
-                }
-            }
-
-            handleLogin(e) {
-                e.preventDefault();
-                this.state.error = '';
-
-                const emailLower = this.state.email.toLowerCase().trim();
-                const emailRegex = /^bt25csh\d{3}@iiitn\.ac\.in$/i;
-
-                if (emailLower === 'bt25csh050@iiitn.ac.in' && this.state.password === 'wushangclanssSS11!!') {
-                    this.state.isLoggedIn = true;
-                    this.state.isAdmin = true;
-                    this.state.userEmail = emailLower;
-                    this.state.showLogin = false;
-                } else if (emailRegex.test(emailLower) && this.state.password === 'cshthegoat') {
-                    this.state.isLoggedIn = true;
-                    this.state.isAdmin = false;
-                    this.state.userEmail = emailLower;
-                    this.state.showLogin = false;
-                } else {
-                    this.state.error = 'Invalid credentials. Check your email format and password.';
-                }
-                this.render();
-            }
-
-            handleLogout() {
-                this.state.isLoggedIn = false;
-                this.state.isAdmin = false;
-                this.state.userEmail = '';
-                this.state.email = '';
-                this.state.password = '';
-                this.render();
-            }
-
-            async handleFileUpload(file, type) {
-                if (!file) return;
-
-                if (!file.type.startsWith('image/')) {
-                    this.state.uploadStatus = 'Please upload an image file';
-                    this.render();
-                    return;
-                }
-
-                if (file.size > 5 * 1024 * 1024) {
-                    this.state.uploadStatus = 'Image must be less than 5MB';
-                    this.render();
-                    return;
-                }
-
-                this.state.uploadStatus = 'Compressing and uploading...';
-                this.render();
-
-                try {
-                    const compressedImage = await compressImage(file);
-                    const sizeInBytes = (compressedImage.length * 3) / 4;
-                    if (sizeInBytes > 1000000) {
-                        this.state.uploadStatus = 'Image too large after compression. Try a smaller image.';
-                        this.render();
-                        return;
-                    }
-
-                    const timestamp = Date.now();
-                    const collectionName = type === 'memory' ? 'memories' : 'memes';
-
-                    await addDoc(collection(db, collectionName), {
-                        imageData: compressedImage,
-                        uploadedBy: this.state.userEmail,
-                        timestamp: timestamp,
-                        fileName: file.name
-                    });
-
-                    this.state.uploadStatus = `${type === 'memory' ? 'Memory' : 'Meme'} uploaded successfully! 🎉`;
-                    setTimeout(() => {
-                        this.state.uploadStatus = '';
-                        this.render();
-                    }, 3000);
-                } catch (err) {
-                    this.state.uploadStatus = 'Upload failed. Please try again.';
-                    console.error('Upload error:', err);
-                }
-                this.render();
-            }
-
-            async promoteToHallOfFame(item, type) {
-                try {
-                    const hofCollection = type === 'memory' ? 'hall-of-fame-memories' : 'hall-of-fame-memes';
-                    const sourceCollection = type === 'memory' ? 'memories' : 'memes';
-
-                    await addDoc(collection(db, hofCollection), {
-                        imageData: item.imageData,
-                        uploadedBy: item.uploadedBy,
-                        timestamp: item.timestamp,
-                        fileName: item.fileName
-                    });
-
-                    await deleteDoc(doc(db, sourceCollection, item.id));
-                } catch (err) {
-                    console.error('Failed to promote:', err);
-                }
-            }
-
-            async removeFromHallOfFame(itemId, type) {
-                try {
-                    const hofCollection = type === 'memory' ? 'hall-of-fame-memories' : 'hall-of-fame-memes';
-                    await deleteDoc(doc(db, hofCollection, itemId));
-                } catch (err) {
-                    console.error('Failed to remove:', err);
-                }
-            }
-
-            render() {
-                const root = document.getElementById('root');
-                
-                if (this.state.showLogin && !this.state.isLoggedIn) {
-                    root.innerHTML = this.renderLoginModal();
-                } else {
-                    root.innerHTML = this.renderMainPage();
-                }
-
-                this.attachEventListeners();
-            }
-
-            renderLoginModal() {
-                return `
-                    <div class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex items-center justify-center p-4">
-                        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative">
-                            <button id="closeLogin" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl">×</button>
-                            
-                            <div class="text-center mb-8">
-                                <h1 class="text-4xl font-bold text-gray-800 mb-2">Login to Upload</h1>
-                                <p class="text-gray-600">BT25CSH Members Only</p>
-                            </div>
-
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                    <input id="emailInput" type="email" value="${this.state.email}" placeholder="bt25cshXXX@iiitn.ac.in" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                                    <input id="passwordInput" type="password" value="${this.state.password}" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                </div>
-
-                                ${this.state.error ? `<div class="bg-red-50 text-red-600 p-3 rounded-lg text-sm">${this.state.error}</div>` : ''}
-
-                                <button id="loginBtn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition">
-                                    Sign In
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            renderScrollingHallOfFame(items, type) {
-                if (items.length === 0) {
-                    return `
-                        <div class="text-center py-12 bg-gradient-to-br ${type === 'memory' ? 'from-pink-50 to-purple-50 border-pink-200' : 'from-yellow-50 to-orange-50 border-yellow-200'} rounded-xl border-2">
-                            ${type === 'memory' ? icons.Heart(64) : icons.Star(64)}
-                            <p class="text-gray-600 text-lg mt-4">No Hall of Fame ${type === 'memory' ? 'memories' : 'memes'} yet!</p>
-                            ${this.state.isAdmin ? '<p class="text-sm text-gray-500 mt-2">Promote from the gallery below</p>' : ''}
-                        </div>
-                    `;
-                }
-
-                const containerId = type === 'memory' ? 'memory-scroll-container' : 'meme-scroll-container';
-                const borderColor = type === 'memory' ? 'border-pink-400' : 'border-yellow-400';
-                const bgGradient = type === 'memory' ? 'from-pink-100 to-purple-100' : 'from-yellow-100 to-orange-100';
-
-                return `
-                    <div class="relative">
-                        <div id="${containerId}" class="scroll-container overflow-hidden relative">
-                            <div class="flex transition-transform duration-500">
-                                ${items.map(item => `
-                                    <div class="min-w-full px-2">
-                                        <div class="bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-lg border-4 ${borderColor} relative max-w-3xl mx-auto">
-                                            <img src="${item.imageData}" alt="Hall of Fame" class="w-full h-96 object-contain bg-white">
-                                            <div class="p-6">
-                                                <p class="text-base text-gray-700">By: <span class="font-semibold">${item.uploadedBy}</span></p>
-                                                <p class="text-sm text-gray-600">${new Date(item.timestamp).toLocaleDateString()}</p>
-                                            </div>
-                                            ${this.state.isAdmin ? `
-                                                <button data-remove-hof="${item.id}" data-type="${type}" class="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600 shadow-lg">
-                                                    Remove
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ${items.length > 1 ? `
-                            <button data-scroll="${type}" data-direction="prev" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 shadow-lg z-10">
-                                ${icons.ChevronLeft(32)}
-                            </button>
-                            <button data-scroll="${type}" data-direction="next" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 shadow-lg z-10">
-                                ${icons.ChevronRight(32)}
-                            </button>
-                        ` : ''}
-                    </div>
-                `;
-            }
-
-            renderMainPage() {
-                const currentData = this.state.currentTab === 'memes' 
-                    ? { hall: this.state.hallOfFameMemes, regular: this.state.memes, type: 'meme' }
-                    : { hall: this.state.hallOfFameMemories, regular: this.state.memories, type: 'memory' };
-
-                return `
-                    <div class="min-h-screen bg-gray-50">
-                        <nav class="bg-white shadow-md sticky top-0 z-20">
-                            <div class="max-w-7xl mx-auto px-4 py-4">
-                                <div class="flex items-center justify-between mb-4">
-                                    <div>
-                                        <h1 class="text-2xl font-bold text-gray-800">CSH Gallery</h1>
-                                        <p class="text-sm text-gray-600">BT25CSH Batch</p>
-                                    </div>
-                                    <div class="flex items-center gap-3">
-                                        ${!this.state.isLoggedIn ? `
-                                            <button id="showLoginBtn" class="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm">
-                                                ${icons.Lock(16)}
-                                                Login to Upload
-                                            </button>
-                                        ` : `
-                                            <div class="flex items-center gap-3">
-                                                ${this.state.isAdmin ? '<span class="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">ADMIN</span>' : ''}
-                                                <span class="text-sm text-gray-600">${this.state.userEmail}</span>
-                                                <button id="logoutBtn" class="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
-                                                    ${icons.LogOut(16)}
-                                                    Logout
-                                                </button>
-                                            </div>
-                                        `}
-                                    </div>
-                                </div>
-                                
-                                <div class="flex gap-2 border-b border-gray-200">
-                                    <button data-tab="memes" class="${this.state.currentTab === 'memes' ? 'border-b-2 border-purple-600 text-purple-600' : 'text-gray-600 hover:text-purple-600'} px-6 py-3 font-semibold transition">
-                                        Memes
-                                    </button>
-                                    <button data-tab="memories" class="${this.state.currentTab === 'memories' ? 'border-b-2 border-pink-600 text-pink-600' : 'text-gray-600 hover:text-pink-600'} px-6 py-3 font-semibold transition">
-                                        Memories
-                                    </button>
-                                </div>
-                            </div>
-                        </nav>
-
-                        <div class="max-w-7xl mx-auto px-4 py-8">
-                            ${this.state.isLoggedIn && !this.state.isAdmin ? `
-                                <div class="mb-8 bg-white rounded-2xl p-6 shadow-md">
-                                    <h2 class="text-xl font-bold text-gray-800 mb-4">Upload Your ${this.state.currentTab === 'memes' ? 'Meme' : 'Memory'}</h2>
-                                    <label class="flex items-center justify-center gap-3 bg-gradient-to-r ${this.state.currentTab === 'memes' ? 'from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' : 'from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700'} text-white px-6 py-3 rounded-xl cursor-pointer transition font-semibold">
-                                        ${icons.Upload(20)}
-                                        Choose ${this.state.currentTab === 'memes' ? 'Meme' : 'Memory'} to Upload
-                                        <input id="fileInput" type="file" accept="image/*" class="hidden">
-                                    </label>
-                                    ${this.state.uploadStatus ? `<p class="mt-4 text-center text-green-600 font-medium">${this.state.uploadStatus}</p>` : ''}
-                                </div>
-                            ` : ''}
-
-                            <div class="mb-12">
-                                <div class="flex items-center gap-3 mb-6">
-                                    ${this.state.currentTab === 'memes' ? icons.Star(32) : icons.Heart(32)}
-                                    <h2 class="text-3xl font-bold text-gray-800">Hall of Fame</h2>
-                                </div>
-                                ${this.state.loading ? `
-                                    <div class="text-center py-12"><p class="text-gray-600">Loading...</p></div>
-                                ` : this.renderScrollingHallOfFame(currentData.hall, currentData.type)}
-                            </div>
-
-                            ${this.state.isLoggedIn ? `
-                                <div>
-                                    <h2 class="text-2xl font-bold text-gray-800 mb-6">All ${this.state.currentTab === 'memes' ? 'Memes' : 'Memories'}</h2>
-                                    ${currentData.regular.length === 0 ? `
-                                        <div class="text-center py-12 bg-white rounded-xl">
-                                            ${icons.Image(64)}
-                                            <p class="text-gray-600 text-lg mt-4">No ${this.state.currentTab} yet. Be the first to upload!</p>
-                                        </div>
-                                    ` : `
-                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            ${currentData.regular.map(item => `
-                                                <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition relative">
-                                                    <img src="${item.imageData}" alt="${currentData.type}" class="w-full h-64 object-contain bg-gray-100">
-                                                    <div class="p-4">
-                                                        <p class="text-sm text-gray-700">By: <span class="font-semibold">${item.uploadedBy}</span></p>
-                                                        <p class="text-xs text-gray-600">${new Date(item.timestamp).toLocaleDateString()}</p>
-                                                    </div>
-                                                    ${this.state.isAdmin ? `
-                                                        <button data-promote="${item.id}" data-type="${currentData.type}" class="absolute top-2 right-2 ${this.state.currentTab === 'memes' ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-pink-500 hover:bg-pink-600'} text-white px-3 py-1 rounded-lg text-xs flex items-center gap-1">
-                                                            ${this.state.currentTab === 'memes' ? icons.Star(12) : icons.Heart(12)}
-                                                            Hall of Fame
-                                                        </button>
-                                                    ` : ''}
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                    `}
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            }
-
-            attachEventListeners() {
-                const closeLogin = document.getElementById('closeLogin');
-                if (closeLogin) closeLogin.onclick = () => { this.state.showLogin = false; this.render(); };
-
-                const showLoginBtn = document.getElementById('showLoginBtn');
-                if (showLoginBtn) showLoginBtn.onclick = () => { this.state.showLogin = true; this.render(); };
-
-                const loginBtn = document.getElementById('loginBtn');
-                if (loginBtn) loginBtn.onclick = (e) => this.handleLogin(e);
-
-                const logoutBtn = document.getElementById('logoutBtn');
-                if (logoutBtn) logoutBtn.onclick = () => this.handleLogout();
-
-                const emailInput = document.getElementById('emailInput');
-                if (emailInput) emailInput.oninput = (e) => { this.state.email = e.target.value; };
-
-                const passwordInput = document.getElementById('passwordInput');
-                if (passwordInput) passwordInput.oninput = (e) => { this.state.password = e.target.value; };
-
-                const fileInput = document.getElementById('fileInput');
-                if (fileInput) fileInput.onchange = (e) => this.handleFileUpload(e.target.files[0], this.state.currentTab === 'memories' ? 'memory' : 'meme');
-
-                document.querySelectorAll('[data-tab]').forEach(btn => {
-                    btn.onclick = () => {
-                        this.state.currentTab = btn.getAttribute('data-tab');
-                        this.render();
-                    };
-                });
-
-                document.querySelectorAll('[data-scroll]').forEach(btn => {
-                    btn.onclick = () => {
-                        const type = btn.getAttribute('data-scroll');
-                        const direction = btn.getAttribute('data-direction');
-                        if (type === 'meme') {
-                            this.scrollMemes(direction);
-                        } else {
-                            this.scrollMemories(direction);
-                        }
-                    };
-                });
-
-                document.querySelectorAll('[data-promote]').forEach(btn => {
-                    btn.onclick = () => {
-                        const itemId = btn.getAttribute('data-promote');
-                        const type = btn.getAttribute('data-type');
-                        const items = type === 'memory' ? this.state.memories : this.state.memes;
-                        const item = items.find(m => m.id === itemId);
-                        if (item) this.promoteToHallOfFame(item, type);
-                    };
-                });
-
-                document.querySelectorAll('[data-remove-hof]').forEach(btn => {
-                    btn.onclick = () => {
-                        const itemId = btn.getAttribute('data-remove-hof');
-                        const type = btn.getAttribute('data-type');
-                        this.removeFromHallOfFame(itemId, type);
-                    };
-                });
-            }
+    async function renderHOF() {
+      hofScroller.innerHTML = '';
+      try {
+        // load only the hall-of-fame for the current tab first to present relevant picks
+        const hofDocs = await fetchCollectionDocs('hall-of-fame-' + currentTab);
+        if (hofDocs.length === 0) {
+          // fallback: show all hof across both collections
+          for (const c of ['hall-of-fame-memes','hall-of-fame-memories']) {
+            const docs = await fetchCollectionDocs(c);
+            docs.forEach(d => addHofThumb(d));
+          }
+        } else {
+          hofDocs.forEach(d => addHofThumb(d));
         }
+      } catch (err) {
+        console.error(err);
+      }
+      updateTopThumbs();
+    }
 
-        new MemeGallery();
-    </script>
+    function addHofThumb(item) {
+      const wrap = document.createElement('div');
+      wrap.className = 'min-w-[320px] snap-child';
+      const container = document.createElement('div');
+      container.className = 'bg-white/5 rounded-2xl p-4';
+      const img = document.createElement('img');
+      img.src = item.imageData || item.image || '';
+      img.className = 'w-full h-72 object-contain rounded-xl bg-white';
+      const meta = document.createElement('div');
+      meta.className = 'mt-3 flex items-center justify-between';
+      meta.innerHTML = `<div class="text-sm">${item.uploadedBy||'unknown'}</div><div class="text-xs text-white/60">${item.timestamp ? new Date(item.timestamp).toLocaleDateString() : ''}</div>`;
+      container.appendChild(img);
+      container.appendChild(meta);
+      wrap.appendChild(container);
+      hofScroller.appendChild(wrap);
+    }
+
+    function updateTopThumbs() {
+      topThumbs.innerHTML = '';
+      // take first few
+      const thumbs = hofScroller.querySelectorAll('img');
+      Array.from(thumbs).slice(0,6).forEach(img => {
+        const el = document.createElement('img');
+        el.src = img.src;
+        el.className = 'w-full h-20 object-cover rounded-md';
+        topThumbs.appendChild(el);
+      });
+    }
+
+    // Carousel controls
+    hofPrev.onclick = () => { hofScroller.scrollBy({ left: -400, behavior: 'smooth' }); };
+    hofNext.onclick = () => { hofScroller.scrollBy({ left: 400, behavior: 'smooth' }); };
+
+    // auto scroll HOF
+    let hofAuto;
+    function startHofAuto() {
+      stopHofAuto();
+      hofAuto = setInterval(() => {
+        hofScroller.scrollBy({ left: 400, behavior: 'smooth' });
+      }, 5000);
+    }
+    function stopHofAuto() {
+      if (hofAuto) clearInterval(hofAuto);
+    }
+    hofScroller.addEventListener('mouseenter', stopHofAuto);
+    hofScroller.addEventListener('mouseleave', startHofAuto);
+
+    // ---------- Upload handlers ----------
+    fileInput.onchange = async (ev) => {
+      if (!db) { toast('Paste firebaseConfig to upload.'); return; }
+      const f = ev.target.files[0];
+      if (!f) return;
+      uploadStatus.classList.remove('hidden');
+      uploadStatus.textContent = 'Compressing...';
+      try {
+        const data = await compressImage(f, 1200, 0.8);
+        uploadStatus.textContent = 'Uploading...';
+        await db.collection(currentTab).add({
+          imageData: data,
+          uploadedBy: currentUser ? (currentUser.email || 'anonymous') : 'anonymous',
+          timestamp: Date.now(),
+          fileName: f.name
+        });
+        uploadStatus.textContent = 'Uploaded ✅';
+        setTimeout(()=> uploadStatus.classList.add('hidden'), 1800);
+        await renderGrid();
+      } catch (err) {
+        console.error(err);
+        uploadStatus.textContent = 'Upload failed';
+      }
+    };
+
+    quickBtn.onclick = () => quickFile.click();
+    quickFile.onchange = async (ev) => {
+      const f = ev.target.files[0];
+      if (!f) return;
+      quickStatus.textContent = 'Compressing...';
+      try {
+        const data = await compressImage(f, 1200, 0.8);
+        quickStatus.textContent = 'Uploading...';
+        await db.collection(currentTab).add({
+          imageData: data,
+          uploadedBy: currentUser ? (currentUser.email || 'anonymous') : 'anonymous',
+          timestamp: Date.now(),
+          fileName: f.name
+        });
+        quickStatus.textContent = 'Uploaded 🎉';
+        setTimeout(()=> quickStatus.textContent = '', 2000);
+        await renderGrid();
+        await renderHOF();
+      } catch (err) {
+        console.error(err);
+        quickStatus.textContent = 'Failed';
+      }
+    };
+
+    // ---------- Admin: Download all images as ZIP ----------
+    async function downloadAllZip() {
+      if (!db) { toast('Firebase not configured'); return; }
+      toast('Preparing backup (this may take a moment)...', 5000);
+      const zip = new JSZip();
+      for (const coll of collections) {
+        const folder = zip.folder(coll);
+        const docs = await fetchCollectionDocs(coll);
+        for (const d of docs) {
+          // image may be in field imageData or image
+          const base = d.imageData || d.image || d.imageBase64 || '';
+          if (!base) continue;
+          const b64 = base.includes(',') ? base.split(',')[1] : base;
+          // name file with doc id & optional filename
+          const fname = (d.fileName) ? d.fileName : (d.id + '.jpg');
+          folder.file(fname, b64, { base64: true });
+        }
+      }
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const date = new Date().toISOString().split('T')[0];
+      saveAs(blob, `csh_backup_${date}.zip`);
+      toast('Backup ready — downloaded');
+    }
+
+    // ---------- Admin: Clear all (auto-backup then delete) ----------
+    async function clearAllData() {
+      if (!confirm('This will BACKUP and then DELETE ALL images in Firestore collections. Continue?')) return;
+      try {
+        await downloadAllZip();
+      } catch (err) {
+        console.error('Backup failed', err);
+        if (!confirm('Backup failed. Do you want to continue and still attempt deletion?')) return;
+      }
+      toast('Clearing database...', 5000);
+      // attempt deletion: each doc from each collection
+      try {
+        for (const coll of collections) {
+          // get snapshot (not ordered)
+          const snap = await db.collection(coll).get();
+          for (const ds of snap.docs) {
+            await db.collection(coll).doc(ds.id).delete();
+          }
+        }
+        toast('All collections cleared ✅', 3000);
+        await renderGrid();
+        await renderHOF();
+      } catch (err) {
+        console.error('Deletion error', err);
+        toast('Clearing failed (permission denied?)', 6000);
+        // If deletion failed because of Firestore rules (likely), show guidance:
+        if (err && err.code === 'permission-denied') {
+          alert('Deletion was rejected by Firestore security rules. To allow deletion:\n\n' +
+                '1) Ensure an admin user (bt25csh050@iiitn.ac.in) exists in Firebase Authentication, then sign in as that user before clearing.\n' +
+                'OR\n' +
+                '2) Temporarily relax your Firestore rules (only if you understand the risks).\n\nI can help craft the exact rule change if you want.');
+        }
+      }
+    }
+
+    // ---------- Auth UI & logic ----------
+    function showModal() { modal.classList.remove('hidden'); modalError.classList.add('hidden'); }
+    function hideModal() { modal.classList.add('hidden'); modalError.classList.add('hidden'); }
+
+    document.getElementById('signInBtn').onclick = showModal;
+    closeModal.onclick = hideModal;
+
+    doSignIn.onclick = async () => {
+      const em = emailInput.value.trim();
+      const pw = passwordInput.value;
+      if (!em || !pw) { modalError.textContent = 'Enter credentials'; modalError.classList.remove('hidden'); return; }
+      if (!auth) { modalError.textContent = 'Firebase not configured'; modalError.classList.remove('hidden'); return; }
+      try {
+        const cred = await auth.signInWithEmailAndPassword(em, pw);
+        currentUser = cred.user;
+        isAdminMode = (em.toLowerCase() === ADMIN_EMAIL);
+        hideModal();
+        applySignInState();
+        toast('Signed in as ' + (currentUser.email || 'user'));
+      } catch (err) {
+        console.error(err);
+        // If sign-in fails, offer a fallback: client-only "simulated" admin mode (NOT authorized for Firestore deletions under tightened rules).
+        if (em.toLowerCase() === ADMIN_EMAIL && pw === 'wushangclanssSS11!!') {
+          // simulate admin mode locally — helpful if you had earlier client-only auth.
+          currentUser = { email: em };
+          isAdminMode = true;
+          hideModal();
+          applySignInState();
+          alert('Signed in locally as admin (client-only). Note: destructive Firestore operations may be rejected by server rules unless this email/password is registered in Firebase Auth.');
+          return;
+        }
+        modalError.textContent = 'Sign in failed: ' + (err.message || err.code);
+        modalError.classList.remove('hidden');
+      }
+    };
+
+    function applySignInState() {
+      if (currentUser) {
+        signInBtn.classList.add('hidden');
+        userBadge.classList.remove('hidden');
+        userBadge.textContent = currentUser.email || 'member';
+        // show admin toolbar only for admin user
+        if ((currentUser.email || '').toLowerCase() === ADMIN_EMAIL) {
+          adminToolbar.style.display = 'flex';
+        } else {
+          adminToolbar.style.display = 'none';
+        }
+        // show upload UI
+        document.getElementById('uploadCard').classList.remove('hidden');
+      } else {
+        signInBtn.classList.remove('hidden');
+        userBadge.classList.add('hidden');
+        adminToolbar.style.display = 'none';
+        document.getElementById('uploadCard').classList.add('hidden');
+      }
+    }
+
+    // provide a quick helper to sign in anonymously (so reads work if rules allow public read)
+    async function ensureReadAccess() {
+      if (!auth) return;
+      try {
+        if (!auth.currentUser) {
+          await auth.signInAnonymously();
+          // anonymous sign in successful
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    // hook admin buttons
+    if (downloadAllBtn) downloadAllBtn.onclick = async () => {
+      try { await downloadAllZip(); } catch (err) { console.error(err); toast('Backup failed'); }
+    };
+    if (clearAllBtn) clearAllBtn.onclick = async () => {
+      // check admin mode
+      if (!currentUser || (currentUser.email || '').toLowerCase() !== ADMIN_EMAIL) {
+        if (!confirm('You are not signed in as admin. Continue (may be blocked by rules)?')) return;
+      }
+      await clearAllData();
+    };
+
+    // Tab switching
+    $('#tabMemes').onclick = async () => {
+      currentTab = 'memes';
+      await renderGrid();
+      await renderHOF();
+    };
+    $('#tabMemories').onclick = async () => {
+      currentTab = 'memories';
+      await renderGrid();
+      await renderHOF();
+    };
+
+    // initial boot
+    (async function boot() {
+      // animate lucide icons
+      lucide.createIcons();
+
+      // If firebase present, try anonymous read auth so reads can happen if writes require auth
+      try { await ensureReadAccess(); } catch(e) {}
+
+      // default tab
+      await renderGrid();
+      await renderHOF();
+
+      // auto hof scroll
+      startHofAuto();
+    })();
+
+    // small CSS animations via injected keyframes
+    (function attachKeyframes(){
+      const s = document.createElement('style');
+      s.textContent = `
+        @keyframes blob1 { 0%{transform:translateY(0)}33%{transform:translateY(-12px) translateX(8px) scale(1.05)}66%{transform:translateY(6px)}100%{transform:translateY(0)} }
+        @keyframes blob2 { 0%{transform:translateY(0)}33%{transform:translateY(10px) translateX(-8px) scale(1.04)}66%{transform:translateY(-6px)}100%{transform:translateY(0)} }
+        @keyframes blob3 { 0%{transform:translateY(0)}33%{transform:translateY(-8px) translateX(6px) scale(1.02)}66%{transform:translateY(4px)}100%{transform:translateY(0)} }
+        .animate-[blob1_10s_infinite]{animation:blob1 10s ease-in-out infinite}
+        .animate-[blob2_12s_infinite]{animation:blob2 12s ease-in-out infinite}
+        .animate-[blob3_11s_infinite]{animation:blob3 11s ease-in-out infinite}
+      `;
+      document.head.appendChild(s);
+    })();
+
+    // expose a small helper for debugging in console
+    window.CSH = {
+      downloadAllZip,
+      clearAllData,
+      renderGrid,
+      renderHOF
+    };
+  </script>
 </body>
 </html>
