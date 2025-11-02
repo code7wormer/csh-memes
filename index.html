@@ -7,7 +7,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
-        .scroll-container { scroll-behavior: smooth; }
+        /* Adjusted for full-width snapping in HoF scroll */
+        .scroll-container { scroll-behavior: smooth; overflow-x: scroll; }
+        .snap-full { min-width: 100%; }
+        /* Hide scrollbar, but still allow scrolling */
+        .scroll-container::-webkit-scrollbar { display: none; }
+        .scroll-container { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body>
@@ -18,16 +23,16 @@
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
         // =================================================================
-        // !!! 🚨 ACTION REQUIRED: REPLACE THESE PLACEHOLDERS 🚨 !!!
+        // !!! 🚨 ACTION REQUIRED: REPLACE YOUR_SUPABASE_PROJECT_URL 🚨 !!!
         // =================================================================
         const supabaseUrl = 'https://vspbfgmfszadpbegmous.supabase.co'; 
-        // Use your Supabase 'anon' key here
+        // NOTE: Use your Supabase 'anon' key here. It must have read access to DB and read/write to the 'gallery' bucket.
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzcGJmZ21mc3phZHBiZWdtb3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTg3MTMsImV4cCI6MjA3NzU5NDcxM30.Phjr2R8e22YH8PNUCP0Ls-_gE8pSRIFel34bvbJCUoQ'; 
         // =================================================================
-
+        
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // Lucide Icons (unchanged)
+        // Lucide Icons
         const icons = {
             Upload: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
             LogOut: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`,
@@ -39,7 +44,7 @@
             ChevronRight: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`
         };
 
-        // --- UTILITY: Image Compression ---
+        // Compress image to a Blob
         function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -49,8 +54,8 @@
                         const canvas = document.createElement('canvas');
                         let width = img.width;
                         let height = img.height;
-
-                        const maxDimension = 1200;
+                        
+                        const maxDimension = 1200; 
                         if (width > maxDimension || height > maxDimension) {
                             if (width > height) {
                                 height = (height / width) * maxDimension;
@@ -60,13 +65,14 @@
                                 height = maxDimension;
                             }
                         }
-
+                        
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-
-                        canvas.toBlob((blob) => {
+                        
+                        canvas.toBlob(
+                            (blob) => {
                                 if (blob) {
                                     resolve(blob);
                                 } else {
@@ -85,7 +91,6 @@
             });
         }
 
-        // --- MAIN GALLERY CLASS ---
         class MemeGallery {
             constructor() {
                 this.state = {
@@ -103,7 +108,6 @@
                     loading: true,
                     error: '',
                     uploadStatus: '',
-                    firebaseReady: true,
                     memeScrollIndex: 0,
                     memoryScrollIndex: 0
                 };
@@ -120,11 +124,11 @@
 
             async loadAllData() {
                 this.state.loading = true;
-
+                
                 const fetchAll = async (table) => {
                     const { data, error } = await supabase
                         .from(table)
-                        .select('id, imageUrl, uploadedBy, timestamp, is_hall_of_fame')
+                        .select('id, imageUrl, uploadedBy, timestamp, is_hall_of_fame') 
                         .order('timestamp', { ascending: false });
                     if (error) {
                         console.error(`Error loading ${table}:`, error);
@@ -138,9 +142,10 @@
                         fetchAll('memes'),
                         fetchAll('memories')
                     ]);
-
+                    
                     this.state.hallOfFameMemes = allMemes.filter(m => m.is_hall_of_fame);
                     this.state.memes = allMemes.filter(m => !m.is_hall_of_fame);
+                    
                     this.state.hallOfFameMemories = allMemories.filter(m => m.is_hall_of_fame);
                     this.state.memories = allMemories.filter(m => !m.is_hall_of_fame);
 
@@ -148,27 +153,50 @@
                     console.log('Error loading data:', err);
                 }
                 this.state.loading = false;
-                this.render();
+                this.render(); 
             }
-            
-            // --- LOGIN/LOGOUT (Hardcoded Admin) ---
+
+            // --- UPDATED LOGIN IMPLEMENTATION ---
             handleLogin(e) {
                 e.preventDefault();
-                const ADMIN_EMAIL = 'admin@admin.com';
-                const ADMIN_PASSWORD = 'password';
+                this.state.error = '';
 
-                if (this.state.email === ADMIN_EMAIL && this.state.password === ADMIN_PASSWORD) {
-                    this.state.isLoggedIn = true;
-                    this.state.isAdmin = true;
-                    this.state.userEmail = ADMIN_EMAIL;
-                    this.state.showLogin = false;
-                    this.state.error = '';
-                } else {
-                    this.state.error = 'Invalid admin credentials.';
+                const emailLower = this.state.email.toLowerCase().trim();
+                const password = this.state.password;
+                // Regular expression to match bt25cshXXX@iiitn.ac.in
+                const emailRegex = /^bt25csh\d{3}@iiitn\.ac\.in$/i;
+
+                let expectedPassword = null;
+                let isAdminCheck = false;
+
+                // 1. Check for Admin
+                if (emailLower === 'bt25csh050@iiitn.ac.in') {
+                    expectedPassword = 'wushangclanssSS11!!';
+                    isAdminCheck = true;
+                } 
+                // 2. Check for Regular User
+                else if (emailRegex.test(emailLower)) {
+                    expectedPassword = 'cshgoated';
+                    isAdminCheck = false;
                 }
+                
+                // 3. Validation Failure
+                if (!expectedPassword || password !== expectedPassword) {
+                    this.state.error = 'Invalid credentials or email format.';
+                    this.render();
+                    return;
+                }
+                
+                // 4. Success
+                this.state.isLoggedIn = true;
+                this.state.isAdmin = isAdminCheck;
+                this.state.userEmail = emailLower; 
+                this.state.showLogin = false;
+                
                 this.render();
             }
 
+            // --- CLIENT-SIDE LOGOUT IMPLEMENTATION (Unchanged) ---
             handleLogout() {
                 this.state.isLoggedIn = false;
                 this.state.isAdmin = false;
@@ -177,15 +205,19 @@
                 this.state.password = '';
                 this.render();
             }
-            
-            // --- UPLOAD LOGIC ---
-            // CRITICALLY MODIFIED: The file path no longer includes the 'public/' prefix
+
+            // --- SUPABASE UPLOAD (Requires Login) ---
             async handleFileUpload(file, type) {
+                if (!this.state.isLoggedIn) {
+                    this.state.uploadStatus = 'Please log in to upload.'; 
+                    this.render(); 
+                    return;
+                }
                 if (!file) return;
                 if (!file.type.startsWith('image/')) {
                     this.state.uploadStatus = 'Please upload an image file'; this.render(); return;
                 }
-                if (file.size > 5 * 1024 * 1024) {
+                if (file.size > 5 * 1024 * 1024) { 
                     this.state.uploadStatus = 'Original image must be less than 5MB'; this.render(); return;
                 }
 
@@ -193,49 +225,37 @@
 
                 try {
                     const compressedBlob = await compressImage(file);
-
                     this.state.uploadStatus = 'Uploading to storage...'; this.render();
 
                     const timestamp = Date.now();
                     const collectionName = type === 'memory' ? 'memories' : 'memes';
+                    const fileName = `${collectionName}/${timestamp}-${file.name}`;
                     
-                    // --- REVISED PATH ---
-                    // Path is now: [memories/timestamp-filename]
-                    const fileName = `${collectionName}/${timestamp}-${file.name}`; 
-
-                    // 1. Upload the image file to Supabase Storage
                     const { error: storageError } = await supabase.storage
                         .from('gallery')
-                        .upload(fileName, compressedBlob, {
-                            cacheControl: '3600',
-                            upsert: false
-                        });
+                        .upload(fileName, compressedBlob, { cacheControl: '3600', upsert: false });
 
                     if (storageError) throw storageError;
 
-                    // 2. Get the public URL
                     const { data: publicUrlData } = supabase.storage
                         .from('gallery')
                         .getPublicUrl(fileName);
-
+                    
                     const downloadURL = publicUrlData.publicUrl;
 
                     this.state.uploadStatus = 'Saving metadata to database...'; this.render();
 
-                    // 3. Save the URL and metadata to the main table
                     const { error: dbError } = await supabase
                         .from(collectionName)
-                        .insert([
-                            {
-                                imageUrl: downloadURL,
-                                uploadedBy: this.state.userEmail || 'Anonymous',
-                                timestamp: timestamp,
-                                is_hall_of_fame: false
-                            }
-                        ]);
+                        .insert([{ 
+                            imageUrl: downloadURL,
+                            uploadedBy: this.state.userEmail, 
+                            timestamp: timestamp,
+                            is_hall_of_fame: false 
+                        }]);
 
                     if (dbError) throw dbError;
-
+                    
                     this.state.uploadStatus = `${type === 'memory' ? 'Memory' : 'Meme'} uploaded successfully! 🎉`;
                     this.loadAllData();
                     setTimeout(() => {
@@ -244,317 +264,365 @@
                     }, 3000);
 
                 } catch (err) {
-                    this.state.uploadStatus = `Upload failed: ${err.message}. Check RLS on tables.`;
+                    this.state.uploadStatus = `Upload failed: ${err.message}. Check RLS/Storage policies.`;
                     console.error('Upload error:', err);
                 }
                 this.render();
             }
 
-            // --- ADMIN LOGIC (Unchanged) ---
+            // --- ADMIN LOGIC: UPDATED to use the is_hall_of_fame column (Requires Admin Check in UI) ---
             async promoteToHallOfFame(item, type) {
+                if (!this.state.isAdmin) return; // Client-side enforcement
                 try {
                     const sourceTable = type === 'memory' ? 'memories' : 'memes';
                     const { error } = await supabase
                         .from(sourceTable)
                         .update({ is_hall_of_fame: true })
                         .eq('id', item.id);
+                    
                     if (error) throw error;
-                    this.loadAllData();
+                    this.loadAllData(); 
                 } catch (err) {
                     console.error('Failed to promote:', err);
                 }
             }
 
             async removeFromHallOfFame(itemId, type) {
+                if (!this.state.isAdmin) return; // Client-side enforcement
                 try {
                     const sourceTable = type === 'memory' ? 'memories' : 'memes';
                     const { error } = await supabase
                         .from(sourceTable)
                         .update({ is_hall_of_fame: false })
                         .eq('id', itemId);
+                    
                     if (error) throw error;
-                    this.loadAllData();
+                    this.loadAllData(); 
                 } catch (err) {
                     console.error('Failed to remove:', err);
                 }
             }
-            
-            // --- SCROLL LOGIC (Unchanged) ---
+
+            // --- SCROLLING LOGIC (Adjusted to use CSS snap) ---
             startAutoScroll() {
                 if (this.memeScrollInterval) clearInterval(this.memeScrollInterval);
                 if (this.memoryScrollInterval) clearInterval(this.memoryScrollInterval);
-                const scrollSpeed = 5000;
-
+                
                 const autoScroll = (type) => {
-                    const container = document.getElementById(`${type}-scroll-container`);
-                    if (!container) return;
-                    
-                    const itemWidth = container.children[0]?.offsetWidth;
-                    if (!itemWidth) return;
-                    
-                    let maxIndex = Math.max(0, container.children.length - 1);
-                    
-                    if (type === 'meme') {
-                        this.state.memeScrollIndex = (this.state.memeScrollIndex + 1) % maxIndex;
-                        container.scrollLeft = this.state.memeScrollIndex * itemWidth;
-                    } else {
-                        this.state.memoryScrollIndex = (this.state.memoryScrollIndex + 1) % maxIndex;
-                        container.scrollLeft = this.state.memoryScrollIndex * itemWidth;
+                    const items = type === 'meme' ? this.state.hallOfFameMemes : this.state.hallOfFameMemories;
+                    if (items.length > 1) {
+                        const nextIndex = (type === 'meme' ? this.state.memeScrollIndex : this.state.memoryScrollIndex) + 1;
+                        if (type === 'meme') {
+                            this.state.memeScrollIndex = nextIndex % items.length;
+                            this.scrollMemes('next', true);
+                        } else {
+                            this.state.memoryScrollIndex = nextIndex % items.length;
+                            this.scrollMemories('next', true);
+                        }
                     }
-                    this.render();
                 };
 
-                this.memeScrollInterval = setInterval(() => autoScroll('meme'), scrollSpeed);
-                this.memoryScrollInterval = setInterval(() => autoScroll('memory'), scrollSpeed);
+                this.memeScrollInterval = setInterval(() => autoScroll('meme'), 5000);
+                this.memoryScrollInterval = setInterval(() => autoScroll('memory'), 5000);
             }
 
-            scrollMemes(direction) {
-                if (this.memeScrollInterval) clearInterval(this.memeScrollInterval);
-                this.memeScrollInterval = setTimeout(() => this.startAutoScroll(), 10000);
-
-                const container = document.getElementById('meme-scroll-container');
-                if (!container) return;
-
-                const itemWidth = container.children[0]?.offsetWidth;
-                if (!itemWidth) return;
-
-                let maxIndex = Math.max(0, container.children.length - 1);
-
-                if (direction === 'left') {
-                    this.state.memeScrollIndex = Math.max(0, this.state.memeScrollIndex - 1);
-                } else {
-                    this.state.memeScrollIndex = Math.min(maxIndex, this.state.memeScrollIndex + 1);
-                }
-
-                container.scrollLeft = this.state.memeScrollIndex * itemWidth;
-            }
-
-            scrollMemories(direction) {
-                if (this.memoryScrollInterval) clearInterval(this.memoryScrollInterval);
-                this.memoryScrollInterval = setTimeout(() => this.startAutoScroll(), 10000);
-
-                const container = document.getElementById('memory-scroll-container');
-                if (!container) return;
-
-                const itemWidth = container.children[0]?.offsetWidth;
-                if (!itemWidth) return;
+            scrollMemes(direction, silent = false) {
+                if (!silent) clearInterval(this.memeScrollInterval); 
                 
-                let maxIndex = Math.max(0, container.children.length - 1);
-
-                if (direction === 'left') {
-                    this.state.memoryScrollIndex = Math.max(0, this.state.memoryScrollIndex - 1);
+                const items = this.state.hallOfFameMemes;
+                const maxIndex = Math.max(0, items.length - 1);
+                
+                if (direction === 'prev') {
+                    this.state.memeScrollIndex = this.state.memeScrollIndex === 0 ? maxIndex : this.state.memeScrollIndex - 1;
                 } else {
-                    this.state.memoryScrollIndex = Math.min(maxIndex, this.state.memoryScrollIndex + 1);
+                    this.state.memeScrollIndex = (this.state.memeScrollIndex + 1) % items.length;
                 }
-
-                container.scrollLeft = this.state.memoryScrollIndex * itemWidth;
+                
+                const container = document.getElementById('meme-scroll-container');
+                if (container) {
+                    const width = container.offsetWidth;
+                    container.scrollTo({ left: width * this.state.memeScrollIndex, behavior: 'smooth' });
+                }
+                
+                if (!silent) this.memeScrollInterval = setTimeout(() => this.startAutoScroll(), 10000);
             }
 
+            scrollMemories(direction, silent = false) {
+                if (!silent) clearInterval(this.memoryScrollInterval);
+                
+                const items = this.state.hallOfFameMemories;
+                const maxIndex = Math.max(0, items.length - 1);
+                
+                if (direction === 'prev') {
+                    this.state.memoryScrollIndex = this.state.memoryScrollIndex === 0 ? maxIndex : this.state.memoryScrollIndex - 1;
+                } else {
+                    this.state.memoryScrollIndex = (this.state.memoryScrollIndex + 1) % items.length;
+                }
+                
+                const container = document.getElementById('memory-scroll-container');
+                if (container) {
+                    const width = container.offsetWidth;
+                    container.scrollTo({ left: width * this.state.memoryScrollIndex, behavior: 'smooth' });
+                }
+                
+                if (!silent) this.memoryScrollInterval = setTimeout(() => this.startAutoScroll(), 10000);
+            }
 
-            // --- RENDERING (Unchanged) ---
+            // --- RENDERING ---
             render() {
                 const root = document.getElementById('root');
-
-                if (this.state.showLogin && !this.state.isLoggedIn) {
+                
+                if (this.state.showLogin) {
                     root.innerHTML = this.renderLoginModal();
                 } else {
                     root.innerHTML = this.renderMainPage();
                 }
 
                 this.attachEventListeners();
+                
+                // Restore scroll position after render
                 requestAnimationFrame(() => {
                     const memeContainer = document.getElementById('meme-scroll-container');
                     const memoryContainer = document.getElementById('memory-scroll-container');
-                    const memeItemWidth = memeContainer?.children[0]?.offsetWidth || 0;
-                    const memoryItemWidth = memoryContainer?.children[0]?.offsetWidth || 0;
 
-                    if (memeContainer) memeContainer.scrollLeft = this.state.memeScrollIndex * memeItemWidth;
-                    if (memoryContainer) memoryContainer.scrollLeft = this.state.memoryScrollIndex * memoryItemWidth;
+                    if (memeContainer) {
+                        const width = memeContainer.offsetWidth;
+                        memeContainer.scrollLeft = width * this.state.memeScrollIndex;
+                    }
+                    if (memoryContainer) {
+                        const width = memoryContainer.offsetWidth;
+                        memoryContainer.scrollLeft = width * this.state.memoryScrollIndex;
+                    }
                 });
             }
 
             renderLoginModal() {
                 return `
                     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
-                            <h2 class="text-2xl font-bold mb-4 flex justify-between items-center">Admin Login <button id="closeLogin" class="text-gray-500 hover:text-gray-700 text-3xl leading-none">&times;</button></h2>
-                            ${this.state.error ? `<p class="text-red-500 mb-4">${this.state.error}</p>` : ''}
-                            <form id="loginForm">
-                                <div class="mb-4">
-                                    <label class="block text-gray-700 text-sm font-bold mb-2" for="emailInput">Email</label>
-                                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="emailInput" type="email" placeholder="admin@admin.com" value="${this.state.email}">
+                        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative">
+                            <button id="closeLogin" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                            
+                            <div class="text-center mb-8">
+                                <h1 class="text-3xl font-bold text-gray-800 mb-2">Login to Access</h1>
+                                <p class="text-gray-600">Enter your official BT25CSH credentials.</p>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                    <input id="emailInput" type="email" value="${this.state.email}" placeholder="bt25cshXXX@iiitn.ac.in" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
                                 </div>
-                                <div class="mb-6">
-                                    <label class="block text-gray-700 text-sm font-bold mb-2" for="passwordInput">Password</label>
-                                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" id="passwordInput" type="password" placeholder="********" value="${this.state.password}">
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                    <input id="passwordInput" type="password" value="${this.state.password}" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
                                 </div>
-                                <div class="flex items-center justify-between">
-                                    <button id="loginBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
-                                        Login
-                                    </button>
-                                </div>
-                            </form>
+
+                                ${this.state.error ? `<div class="bg-red-50 text-red-600 p-3 rounded-lg text-sm">${this.state.error}</div>` : ''}
+
+                                <button id="loginBtn" class="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
+                                    Sign In
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
             }
 
             renderScrollingHallOfFame(items, type) {
-                const title = type === 'meme' ? 'Hall of Fame Memes' : 'Hall of Fame Memories';
-                const containerId = `${type}-scroll-container`;
-
                 if (items.length === 0) {
                     return `
-                        <div class="text-center py-8 text-gray-500">
-                            No ${title} yet. Promote a favorite!
+                        <div class="text-center py-12 bg-gradient-to-br ${type === 'memory' ? 'from-pink-50 to-purple-50 border-pink-200' : 'from-yellow-50 to-orange-50 border-yellow-200'} rounded-xl border-2">
+                            ${type === 'memory' ? icons.Heart(64) : icons.Star(64)}
+                            <p class="text-gray-600 text-lg mt-4">No Hall of Fame ${type === 'memory' ? 'memories' : 'memes'} yet!</p>
+                            ${this.state.isAdmin ? '<p class="text-sm text-gray-500 mt-2">Promote from the gallery below</p>' : ''}
                         </div>
                     `;
                 }
 
+                const containerId = type === 'memory' ? 'memory-scroll-container' : 'meme-scroll-container';
+                const borderColor = type === 'memory' ? 'border-pink-400' : 'border-yellow-400';
+                const bgGradient = type === 'memory' ? 'from-pink-100 to-purple-100' : 'from-yellow-100 to-orange-100';
+
                 return `
-                    <div class="relative group mt-4">
-                        <h2 class="text-2xl font-bold mb-4 text-center text-yellow-600 flex items-center justify-center">
-                            ${icons.Star(28)} <span class="ml-2">${title}</span> ${icons.Star(28)}
-                        </h2>
-                        
-                        <div id="${containerId}" class="scroll-container flex overflow-x-scroll snap-x snap-mandatory space-x-4 pb-4">
-                            ${items.map(item => `
-                                <div class="snap-start flex-shrink-0 w-full md:w-1/2 lg:w-1/3 xl:w-1/4">
-                                    <div class="relative bg-white shadow-xl rounded-lg overflow-hidden border-2 border-yellow-500">
-                                        <img src="${item.imageUrl}" alt="${type}" class="w-full h-64 object-cover">
-                                        <div class="p-3 text-center">
-                                            <p class="text-sm text-gray-600">Uploaded by: ${item.uploadedBy || 'Anonymous'}</p>
-                                            <p class="text-xs text-gray-400">${new Date(item.timestamp).toLocaleDateString()}</p>
+                    <div class="relative">
+                        <div id="${containerId}" class="scroll-container overflow-x-scroll snap-x snap-mandatory relative">
+                            <div class="flex">
+                                ${items.map(item => `
+                                    <div class="snap-start snap-full px-2">
+                                        <div class="bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-lg border-4 ${borderColor} relative max-w-3xl mx-auto">
+                                            <img src="${item.imageUrl}" alt="Hall of Fame" class="w-full h-96 object-contain bg-white">
+                                            <div class="p-6">
+                                                <p class="text-base text-gray-700">By: <span class="font-semibold">${item.uploadedBy}</span></p>
+                                                <p class="text-sm text-gray-600">${new Date(item.timestamp).toLocaleDateString()}</p>
+                                            </div>
                                             ${this.state.isAdmin ? `
-                                                <button data-remove-hof="${item.id}" data-type="${type === 'meme' ? 'meme' : 'memory'}" class="mt-2 text-sm bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded">
-                                                    Remove from HoF
+                                                <button data-remove-hof="${item.id}" data-type="${type}" class="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600 shadow-lg">
+                                                    Remove
                                                 </button>
                                             ` : ''}
                                         </div>
                                     </div>
-                                </div>
-                            `).join('')}
+                                `).join('')}
+                            </div>
                         </div>
-
-                        <button data-scroll="${type}" data-direction="left" class="absolute left-0 top-1/2 -mt-10 transform -translate-y-1/2 bg-white/70 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition duration-300 z-10">
-                            ${icons.ChevronLeft(36)}
-                        </button>
-                        <button data-scroll="${type}" data-direction="right" class="absolute right-0 top-1/2 -mt-10 transform -translate-y-1/2 bg-white/70 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition duration-300 z-10">
-                            ${icons.ChevronRight(36)}
-                        </button>
+                        ${items.length > 1 ? `
+                            <button data-scroll="${type}" data-direction="prev" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 shadow-lg z-10">
+                                ${icons.ChevronLeft(32)}
+                            </button>
+                            <button data-scroll="${type}" data-direction="next" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 shadow-lg z-10">
+                                ${icons.ChevronRight(32)}
+                            </button>
+                        ` : ''}
                     </div>
                 `;
             }
 
             renderMainPage() {
-                const isMemeTab = this.state.currentTab === 'memes';
-                const currentItems = isMemeTab ? this.state.memes : this.state.memories;
-                const tabTitle = isMemeTab ? 'Meme Gallery' : 'Memory Gallery';
-                const type = isMemeTab ? 'meme' : 'memory';
+                const currentData = this.state.currentTab === 'memes' 
+                    ? { hall: this.state.hallOfFameMemes, regular: this.state.memes, type: 'meme' }
+                    : { hall: this.state.hallOfFameMemories, regular: this.state.memories, type: 'memory' };
 
                 return `
-                    <div class="min-h-screen bg-gray-100">
-                        <header class="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-20">
-                            <h1 class="text-3xl font-extrabold text-indigo-700">CSH Gallery</h1>
-                            <div class="flex items-center space-x-4">
-                                ${this.state.isAdmin ? `
-                                    <span class="text-sm text-green-600 font-medium flex items-center">
-                                        ${icons.Lock(20)} <span class="ml-1">Admin Mode</span>
-                                    </span>
-                                    <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg flex items-center transition duration-200">
-                                        ${icons.LogOut(20)} <span class="ml-2 hidden sm:inline">Logout</span>
-                                    </button>
-                                ` : `
-                                    <button id="showLoginBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg flex items-center transition duration-200">
-                                        ${icons.Lock(20)} <span class="ml-2 hidden sm:inline">Admin Login</span>
-                                    </button>
-                                `}
-                            </div>
-                        </header>
-
-                        <main class="container mx-auto p-4">
-                            ${this.renderScrollingHallOfFame(this.state.hallOfFameMemes, 'meme')}
-                            ${this.renderScrollingHallOfFame(this.state.hallOfFameMemories, 'memory')}
-
-                            <hr class="my-8 border-t-2 border-gray-300">
-
-                            ${this.state.uploadStatus ? `
-                                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
-                                    <p class="font-bold">Status</p>
-                                    <p>${this.state.uploadStatus}</p>
+                    <div class="min-h-screen bg-gray-50">
+                        <nav class="bg-white shadow-md sticky top-0 z-20">
+                            <div class="max-w-7xl mx-auto px-4 py-4">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h1 class="text-2xl font-bold text-gray-800">CSH Gallery</h1>
+                                        <p class="text-sm text-gray-600">BT25CSH Batch</p>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        ${!this.state.isLoggedIn ? `
+                                            <button id="showLoginBtn" class="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm">
+                                                ${icons.Lock(16)}
+                                                Login to Access
+                                            </button>
+                                        ` : `
+                                            <div class="flex items-center gap-3">
+                                                ${this.state.isAdmin ? '<span class="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">ADMIN</span>' : ''}
+                                                <span class="text-sm text-gray-600">${this.state.userEmail}</span>
+                                                <button id="logoutBtn" class="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
+                                                    ${icons.LogOut(16)}
+                                                    Logout
+                                                </button>
+                                            </div>
+                                        `}
+                                    </div>
                                 </div>
-                            ` : ''}
-
-                            <div class="flex flex-col md:flex-row justify-between items-center mb-6 space-y-4 md:space-y-0">
-                                <div class="flex space-x-2 p-1 bg-white rounded-lg shadow-inner">
-                                    <button data-tab="memes" class="py-2 px-4 rounded-md font-semibold transition-colors ${isMemeTab ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-200'}">
+                                
+                                <div class="flex gap-2 border-b border-gray-200">
+                                    <button data-tab="memes" class="${this.state.currentTab === 'memes' ? 'border-b-2 border-purple-600 text-purple-600' : 'text-gray-600 hover:text-purple-600'} px-6 py-3 font-semibold transition">
                                         Memes
                                     </button>
-                                    <button data-tab="memories" class="py-2 px-4 rounded-md font-semibold transition-colors ${!isMemeTab ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-200'}">
+                                    <button data-tab="memories" class="${this.state.currentTab === 'memories' ? 'border-b-2 border-pink-600 text-pink-600' : 'text-gray-600 hover:text-pink-600'} px-6 py-3 font-semibold transition">
                                         Memories
                                     </button>
                                 </div>
-                                <label for="fileInput" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg cursor-pointer flex items-center shadow-md transition duration-200">
-                                    ${icons.Upload(20)} <span class="ml-2">Upload ${isMemeTab ? 'Meme' : 'Memory'}</span>
-                                </label>
-                                <input type="file" id="fileInput" accept="image/*" class="hidden">
+                            </div>
+                        </nav>
+
+                        <div class="max-w-7xl mx-auto px-4 py-8">
+                            
+                            <div class="mb-12">
+                                <div class="flex items-center gap-3 mb-6">
+                                    ${this.state.currentTab === 'memes' ? icons.Star(32) : icons.Heart(32)}
+                                    <h2 class="text-3xl font-bold text-gray-800">Hall of Fame</h2>
+                                </div>
+                                ${this.state.loading ? `
+                                    <div class="text-center py-12"><p class="text-gray-600">Loading...</p></div>
+                                ` : this.renderScrollingHallOfFame(currentData.hall, currentData.type)}
                             </div>
 
-                            <h2 class="text-3xl font-extrabold text-gray-800 mb-6 border-b pb-2">${tabTitle}</h2>
-                            ${this.state.loading ? `
-                                <div class="text-center py-10 text-xl text-indigo-500">Loading ${tabTitle}...</div>
-                            ` : currentItems.length === 0 ? `
-                                <div class="text-center py-10 text-xl text-gray-500">No ${tabTitle.toLowerCase()} have been uploaded yet.</div>
-                            ` : `
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                    ${currentItems.map(item => `
-                                        <div class="bg-white shadow-lg rounded-xl overflow-hidden transform hover:scale-[1.02] transition duration-300">
-                                            <img src="${item.imageUrl}" alt="${type}" class="w-full h-64 object-cover">
-                                            <div class="p-4">
-                                                <p class="text-sm text-gray-600 mb-2">By: ${item.uploadedBy || 'Anonymous'}</p>
-                                                <p class="text-xs text-gray-400">${new Date(item.timestamp).toLocaleDateString()}</p>
-                                                ${this.state.isAdmin ? `
-                                                    <button data-promote="${item.id}" data-type="${type}" class="mt-3 text-sm bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded flex items-center">
-                                                        ${icons.Star(16)} <span class="ml-1">Promote to HoF</span>
-                                                    </button>
-                                                ` : ''}
-                                            </div>
+                            ${this.state.isLoggedIn ? `
+                                
+                                <div class="mb-8 bg-white rounded-2xl p-6 shadow-md">
+                                    <h2 class="text-xl font-bold text-gray-800 mb-4">Upload Your ${this.state.currentTab === 'memes' ? 'Meme' : 'Memory'}</h2>
+                                    <label class="flex items-center justify-center gap-3 bg-gradient-to-r ${this.state.currentTab === 'memes' ? 'from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' : 'from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700'} text-white px-6 py-3 rounded-xl cursor-pointer transition font-semibold">
+                                        ${icons.Upload(20)}
+                                        Choose ${this.state.currentTab === 'memes' ? 'Meme' : 'Memory'} to Upload
+                                        <input id="fileInput" type="file" accept="image/*" class="hidden">
+                                    </label>
+                                    ${this.state.uploadStatus ? `<p class="mt-4 text-center ${this.state.uploadStatus.includes('failed') ? 'text-red-600' : 'text-green-600'} font-medium">${this.state.uploadStatus}</p>` : ''}
+                                </div>
+
+                                <div>
+                                    <h2 class="text-2xl font-bold text-gray-800 mb-6">All ${this.state.currentTab === 'memes' ? 'Memes' : 'Memories'}</h2>
+                                    ${currentData.regular.length === 0 ? `
+                                        <div class="text-center py-12 bg-white rounded-xl">
+                                            ${icons.Image(64)}
+                                            <p class="text-gray-600 text-lg mt-4">No ${this.state.currentTab} yet. Be the first to upload!</p>
                                         </div>
-                                    `).join('')}
+                                    ` : `
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            ${currentData.regular.map(item => `
+                                                <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition relative">
+                                                    <img src="${item.imageUrl}" alt="${currentData.type}" class="w-full h-64 object-contain bg-gray-100">
+                                                    <div class="p-4">
+                                                        <p class="text-sm text-gray-700">By: <span class="font-semibold">${item.uploadedBy}</span></p>
+                                                        <p class="text-xs text-gray-600">${new Date(item.timestamp).toLocaleDateString()}</p>
+                                                    </div>
+                                                    ${this.state.isAdmin ? `
+                                                        <button data-promote="${item.id}" data-type="${currentData.type}" class="absolute top-2 right-2 ${this.state.currentTab === 'memes' ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-pink-500 hover:bg-pink-600'} text-white px-3 py-1 rounded-lg text-xs flex items-center gap-1">
+                                                            ${this.state.currentTab === 'memes' ? icons.Star(12) : icons.Heart(12)}
+                                                            Hall of Fame
+                                                        </button>
+                                                    ` : ''}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    `}
+                                </div>
+                            ` : `
+                                <div class="text-center py-20 bg-white rounded-xl shadow-lg border-2 border-gray-200">
+                                    ${icons.Lock(48)}
+                                    <h3 class="text-2xl font-bold text-gray-700 mt-4">Login Required</h3>
+                                    <p class="text-gray-500 mt-2">Please log in to view the full gallery and upload content.</p>
+                                    <button id="showLoginBtn_gated" class="mt-6 flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition text-md mx-auto">
+                                        ${icons.Lock(18)}
+                                        Login Now
+                                    </button>
                                 </div>
                             `}
-                        </main>
+                        </div>
                     </div>
                 `;
             }
 
             attachEventListeners() {
-                document.getElementById('showLoginBtn')?.addEventListener('click', () => {
-                    this.state.showLogin = true;
-                    this.render();
-                });
-                document.getElementById('closeLogin')?.addEventListener('click', () => {
-                    this.state.showLogin = false;
-                    this.render();
-                });
-                document.getElementById('loginBtn')?.addEventListener('click', this.handleLogin.bind(this));
-                document.getElementById('logoutBtn')?.addEventListener('click', this.handleLogout.bind(this));
-                document.getElementById('emailInput')?.addEventListener('input', (e) => this.state.email = e.target.value);
-                document.getElementById('passwordInput')?.addEventListener('input', (e) => this.state.password = e.target.value);
-                
-                document.getElementById('fileInput')?.addEventListener('change', (e) => {
-                    if (e.target.files[0]) {
-                        this.handleFileUpload(e.target.files[0], this.state.currentTab === 'memes' ? 'meme' : 'memory');
-                    }
-                });
+                const closeLogin = document.getElementById('closeLogin');
+                if (closeLogin) closeLogin.onclick = () => { this.state.showLogin = false; this.render(); };
+
+                const showLoginBtn = document.getElementById('showLoginBtn');
+                const showLoginBtnGated = document.getElementById('showLoginBtn_gated');
+
+                const showLogin = () => { this.state.showLogin = true; this.render(); };
+
+                if (showLoginBtn) showLoginBtn.onclick = showLogin;
+                if (showLoginBtnGated) showLoginBtnGated.onclick = showLogin;
+
+                const loginBtn = document.getElementById('loginBtn');
+                if (loginBtn) loginBtn.onclick = (e) => this.handleLogin(e);
+
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) logoutBtn.onclick = () => this.handleLogout();
+
+                const emailInput = document.getElementById('emailInput');
+                if (emailInput) emailInput.oninput = (e) => { this.state.email = e.target.value; };
+
+                const passwordInput = document.getElementById('passwordInput');
+                if (passwordInput) passwordInput.oninput = (e) => { this.state.password = e.target.value; };
+
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) fileInput.onchange = (e) => this.handleFileUpload(e.target.files[0], this.state.currentTab === 'memories' ? 'memory' : 'meme');
 
                 document.querySelectorAll('[data-tab]').forEach(btn => {
                     btn.onclick = () => {
                         this.state.currentTab = btn.getAttribute('data-tab');
-                        this.render();
+                        this.loadAllData();
                     };
                 });
-                
+
                 document.querySelectorAll('[data-scroll]').forEach(btn => {
                     btn.onclick = () => {
                         const type = btn.getAttribute('data-scroll');
