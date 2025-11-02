@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSH Meme Gallery - BT25CSH</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Lucide Icons as inline SVG components
+        const Upload = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+        );
+
+        const LogOut = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+        );
+
+        const Star = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+        );
+
+        const Image = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+        );
+
+        const Lock = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        );
+
+        // Simple localStorage-based storage API (mimicking Claude's storage API)
+        window.storage = {
+            get: async (key, shared) => {
+                try {
+                    const value = localStorage.getItem(key);
+                    return value ? { key, value, shared } : null;
+                } catch (err) {
+                    throw new Error('Key not found');
+                }
+            },
+            set: async (key, value, shared) => {
+                try {
+                    localStorage.setItem(key, value);
+                    return { key, value, shared };
+                } catch (err) {
+                    return null;
+                }
+            },
+            delete: async (key, shared) => {
+                try {
+                    localStorage.removeItem(key);
+                    return { key, deleted: true, shared };
+                } catch (err) {
+                    return null;
+                }
+            }
+        };
+
+        function MemeGallery() {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [userEmail, setUserEmail] = useState('');
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [hallOfFameMemes, setHallOfFameMemes] = useState([]);
+            const [memes, setMemes] = useState([]);
+            const [showLogin, setShowLogin] = useState(false);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState('');
+            const [uploadStatus, setUploadStatus] = useState('');
+
+            useEffect(() => {
+                loadHallOfFame();
+            }, []);
+
+            useEffect(() => {
+                if (isLoggedIn) {
+                    loadAllMemes();
+                }
+            }, [isLoggedIn]);
+
+            const loadHallOfFame = async () => {
+                setLoading(true);
+                try {
+                    const hofMemesResult = await window.storage.get('hall-of-fame-memes', true);
+                    if (hofMemesResult) {
+                        setHallOfFameMemes(JSON.parse(hofMemesResult.value));
+                    }
+                } catch (err) {
+                    console.log('No hall of fame memes yet');
+                }
+                setLoading(false);
+            };
+
+            const loadAllMemes = async () => {
+                try {
+                    const regularMemesResult = await window.storage.get('regular-memes', true);
+                    if (regularMemesResult) {
+                        setMemes(JSON.parse(regularMemesResult.value));
+                    }
+                } catch (err) {
+                    console.log('No regular memes yet');
+                }
+            };
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                setError('');
+
+                const emailLower = email.toLowerCase().trim();
+                const emailRegex = /^bt25csh\d{3}@iiitn\.ac\.in$/i;
+
+                if (emailLower === 'bt25csh050@iiitn.ac.in' && password === 'wushangclanssSS11!!') {
+                    setIsLoggedIn(true);
+                    setIsAdmin(true);
+                    setUserEmail(emailLower);
+                    setShowLogin(false);
+                } else if (emailRegex.test(emailLower) && password === 'cshthegoat') {
+                    setIsLoggedIn(true);
+                    setIsAdmin(false);
+                    setUserEmail(emailLower);
+                    setShowLogin(false);
+                } else {
+                    setError('Invalid credentials. Check your email format and password.');
+                }
+            };
+
+            const handleLogout = () => {
+                setIsLoggedIn(false);
+                setIsAdmin(false);
+                setUserEmail('');
+                setEmail('');
+                setPassword('');
+            };
+
+            const handleFileUpload = async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                if (!file.type.startsWith('image/')) {
+                    setUploadStatus('Please upload an image file');
+                    return;
+                }
+
+                if (file.size > 5 * 1024 * 1024) {
+                    setUploadStatus('Image must be less than 5MB');
+                    return;
+                }
+
+                setUploadStatus('Uploading...');
+
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const memeData = {
+                            id: Date.now() + Math.random(),
+                            imageData: event.target.result,
+                            uploadedBy: userEmail,
+                            timestamp: new Date().toISOString(),
+                            fileName: file.name
+                        };
+
+                        const newMemes = [...memes, memeData];
+                        await window.storage.set('regular-memes', JSON.stringify(newMemes), true);
+                        setMemes(newMemes);
+                        setUploadStatus('Meme uploaded successfully! 🎉');
+
+                        setTimeout(() => setUploadStatus(''), 3000);
+                    } catch (err) {
+                        setUploadStatus('Upload failed. Please try again.');
+                        console.error('Upload error:', err);
+                    }
+                };
+
+                reader.readAsDataURL(file);
+            };
+
+            const promoteToHallOfFame = async (memeId) => {
+                const memeToPromote = memes.find(m => m.id === memeId);
+                if (!memeToPromote) return;
+
+                try {
+                    const newHofMemes = [...hallOfFameMemes, memeToPromote];
+                    await window.storage.set('hall-of-fame-memes', JSON.stringify(newHofMemes), true);
+                    setHallOfFameMemes(newHofMemes);
+
+                    const newMemes = memes.filter(m => m.id !== memeId);
+                    await window.storage.set('regular-memes', JSON.stringify(newMemes), true);
+                    setMemes(newMemes);
+                } catch (err) {
+                    console.error('Failed to promote meme:', err);
+                }
+            };
+
+            const removeFromHallOfFame = async (memeId) => {
+                try {
+                    const newHofMemes = hallOfFameMemes.filter(m => m.id !== memeId);
+                    await window.storage.set('hall-of-fame-memes', JSON.stringify(newHofMemes), true);
+                    setHallOfFameMemes(newHofMemes);
+                } catch (err) {
+                    console.error('Failed to remove meme:', err);
+                }
+            };
+
+            if (showLogin && !isLoggedIn) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative">
+                            <button
+                                onClick={() => setShowLogin(false)}
+                                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl"
+                            >
+                                ×
+                            </button>
+                            
+                            <div className="text-center mb-8">
+                                <h1 className="text-4xl font-bold text-gray-800 mb-2">Login to Upload</h1>
+                                <p className="text-gray-600">BT25CSH Members Only</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="bt25cshXXX@iiitn.ac.in"
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    />
+                                </div>
+
+                                {error && (
+                                    <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                                        {error}
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={handleLogin}
+                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition"
+                                >
+                                    Sign In
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    <nav className="bg-white shadow-md sticky top-0 z-10">
+                        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-800">CSH Meme Gallery</h1>
+                                <p className="text-sm text-gray-600">BT25CSH Batch</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {!isLoggedIn ? (
+                                    <button
+                                        onClick={() => setShowLogin(true)}
+                                        className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm"
+                                    >
+                                        <Lock size={16} />
+                                        Login to Upload
+                                    </button>
+                                ) : (
+                                    <div className="flex items-center gap-3">
+                                        {isAdmin && (
+                                            <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">
+                                                ADMIN
+                                            </span>
+                                        )}
+                                        <span className="text-sm text-gray-600">{userEmail}</span>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm"
+                                        >
+                                            <LogOut size={16} />
+                                            Logout
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </nav>
+
+                    <div className="max-w-7xl mx-auto px-4 py-8">
+                        {isLoggedIn && !isAdmin && (
+                            <div className="mb-8 bg-white rounded-2xl p-6 shadow-md">
+                                <h2 className="text-xl font-bold text-gray-800 mb-4">Upload Your Meme</h2>
+                                <label className="flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl cursor-pointer hover:from-purple-700 hover:to-pink-700 transition font-semibold">
+                                    <Upload size={20} />
+                                    Choose Meme to Upload
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                    />
+                                </label>
+                                {uploadStatus && (
+                                    <p className="mt-4 text-center text-green-600 font-medium">{uploadStatus}</p>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="mb-12">
+                            <div className="flex items-center gap-3 mb-6">
+                                <Star className="text-yellow-500" size={32} />
+                                <h2 className="text-3xl font-bold text-gray-800">Hall of Fame</h2>
+                            </div>
+                            {loading ? (
+                                <div className="text-center py-12">
+                                    <p className="text-gray-600">Loading...</p>
+                                </div>
+                            ) : hallOfFameMemes.length === 0 ? (
+                                <div className="text-center py-12 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border-2 border-yellow-200">
+                                    <Star className="mx-auto mb-4 text-yellow-400" size={64} />
+                                    <p className="text-gray-600 text-lg">No Hall of Fame memes yet!</p>
+                                    {isAdmin && <p className="text-sm text-gray-500 mt-2">Promote memes from the gallery below</p>}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {hallOfFameMemes.map((meme) => (
+                                        <div key={meme.id} className="bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl overflow-hidden shadow-lg border-4 border-yellow-400 relative">
+                                            <img
+                                                src={meme.imageData}
+                                                alt="Hall of Fame Meme"
+                                                className="w-full h-64 object-contain bg-white"
+                                            />
+                                            <div className="p-4">
+                                                <p className="text-sm text-gray-700">
+                                                    By: <span className="font-semibold">{meme.uploadedBy}</span>
+                                                </p>
+                                                <p className="text-xs text-gray-600">
+                                                    {new Date(meme.timestamp).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            {isAdmin && (
+                                                <button
+                                                    onClick={() => removeFromHallOfFame(meme.id)}
+                                                    className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-red-600"
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {isLoggedIn && (
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-6">All Memes</h2>
+                                {memes.length === 0 ? (
+                                    <div className="text-center py-12 bg-white rounded-xl">
+                                        <Image className="mx-auto mb-4 text-gray-400" size={64} />
+                                        <p className="text-gray-600 text-lg">No memes yet. Be the first to upload!</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {memes.map((meme) => (
+                                            <div key={meme.id} className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition relative">
+                                                <img
+                                                    src={meme.imageData}
+                                                    alt="Meme"
+                                                    className="w-full h-64 object-contain bg-gray-100"
+                                                />
+                                                <div className="p-4">
+                                                    <p className="text-sm text-gray-700">
+                                                        By: <span className="font-semibold">{meme.uploadedBy}</span>
+                                                    </p>
+                                                    <p className="text-xs text-gray-600">
+                                                        {new Date(meme.timestamp).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                                {isAdmin && (
+                                                    <button
+                                                        onClick={() => promoteToHallOfFame(meme.id)}
+                                                        className="absolute top-2 right-2 bg-yellow-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-yellow-600 flex items-center gap-1"
+                                                    >
+                                                        <Star size={12} />
+                                                        Hall of Fame
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<MemeGallery />, document.getElementById('root'));
+    </script>
+</body>
+</html>
