@@ -1330,28 +1330,29 @@
             }
             
             // Auto-scroll and manual scroll functions
+            // --- MODIFIED: SCROLL FUNCTIONS FOR DIRECT DOM SCROLLING ---
             scrollMemes(direction) { 
                 const container = document.getElementById('meme-scroll-container');
                 if (!container || this.state.hallOfFameMemes.length === 0) return;
                 const totalItems = this.state.hallOfFameMemes.length;
                 let newIndex = this.state.memeScrollIndex;
-                let changed = false; // <-- NEW FLAG
 
                 if (direction === 'next') {
                     newIndex = (newIndex + 1) % totalItems;
-                    changed = true;
                 } else if (direction === 'prev') {
+                    // Use the positive modulo operation for correct wrapping when scrolling backwards
                     newIndex = (newIndex - 1 + totalItems) % totalItems;
-                    changed = true;
                 }
-                // Only update state and re-render if the index actually changed (for manual buttons)
-                if (changed || this.state.memeScrollIndex !== newIndex) { 
-                    this.state.memeScrollIndex = newIndex;
-                }
+                
+                // CRITICAL FIX: Update the state *before* scrolling the DOM.
+                // This ensures the next automatic scroll starts from the correct index.
+                this.state.memeScrollIndex = newIndex; 
+                
+                // Direct DOM manipulation for scrolling (smooth behavior is inherited from CSS: scroll-behavior: smooth)
                 const width = container.offsetWidth;
                 container.scrollLeft = width * this.state.memeScrollIndex;
-                // DO NOT CALL this.render() HERE
-            
+                
+                // Note: No need to call this.render() here, which prevents the flicker.
             }
 
             scrollMemories(direction) { 
@@ -1359,24 +1360,21 @@
                 if (!container || this.state.hallOfFameMemories.length === 0) return;
                 const totalItems = this.state.hallOfFameMemories.length;
                 let newIndex = this.state.memoryScrollIndex;
-                let changed = false; // <-- NEW FLAG
 
                 if (direction === 'next') {
                     newIndex = (newIndex + 1) % totalItems;
-                    changed = true; // <-- SET FLAG
                 } else if (direction === 'prev') {
                     newIndex = (newIndex - 1 + totalItems) % totalItems;
-                    changed = true; // <-- SET FLAG
                 }
 
-                if (changed || this.state.memoryScrollIndex !== newIndex) {
-                    this.state.memoryScrollIndex = newIndex;
-                }
+                // CRITICAL FIX: Update the state *before* scrolling the DOM.
+                this.state.memoryScrollIndex = newIndex; 
                 
-                // CRITICAL FIX: Direct DOM manipulation for scrolling
+                // Direct DOM manipulation for scrolling
                 const width = container.offsetWidth;
                 container.scrollLeft = width * this.state.memoryScrollIndex;
-                // DO NOT CALL this.render() HERE
+                
+                // Note: No need to call this.render() here, which prevents the flicker.
             }
 
             startAutoScroll() {
@@ -1384,14 +1382,16 @@
                 if (this.memeScrollInterval) clearInterval(this.memeScrollInterval);
                 this.memeScrollInterval = setInterval(() => {
                     if (this.state.currentTab === 'memes' && !this.state.showLogin) {
-                        this.scrollMemes('next'); // Calls direct DOM update
+                        // The scrollMemes function now updates the state and DOM directly.
+                        this.scrollMemes('next'); 
                     }
                 }, 5000);
 
                 if (this.memoryScrollInterval) clearInterval(this.memoryScrollInterval);
                 this.memoryScrollInterval = setInterval(() => {
                     if (this.state.currentTab === 'memories' && !this.state.showLogin) {
-                        this.scrollMemories('next'); // Calls direct DOM update
+                         // The scrollMemories function now updates the state and DOM directly.
+                        this.scrollMemories('next'); 
                     }
                 }, 5000);
             }
