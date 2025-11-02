@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSH Hub 2025</title>
+    <title>CSH Gallery - BT25CSH - V.2.0: ARCADE MODE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* --- CUSTOM GAMING STYLES --- */
@@ -35,7 +35,7 @@
             height: 100%;
             object-fit: cover; /* Ensures video covers screen */
             z-index: -2; /* On top of color, behind scanlines */
-            opacity: 0.3; /* 50% opacity as requested */
+            opacity: 0.5; /* 50% opacity as requested */
         }
         /* --- END: Background Video CSS --- */
         
@@ -945,7 +945,7 @@
                             <div class="max-w-7xl mx-auto px-4 py-4">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-4">
-                                        <h1 class="text-4xl font-extrabold neon-text-cyan tracking-widest">CSH_HUB</h1>
+                                        <h1 class="text-4xl font-extrabold neon-text-cyan tracking-widest">CSH_ARCADE</h1>
                                         <p class="text-sm text-gray-500 border-l border-gray-700 pl-3">${this.state.isLoggedIn ? 'User: ONLINE' : 'User: GUEST'}</p>
                                     </div>
                                     <div class="flex items-center gap-4">
@@ -996,7 +996,7 @@
                                         <div class="flex items-center gap-3 mb-6">
                                             ${isMemeTab ? icons.Image(36) : icons.Heart(36)}
                                             <h2 class="text-3xl font-extrabold ${isMemeTab ? 'neon-text-pink' : 'neon-text-cyan'} tracking-tight">HALL OF GLORY // ARCHIVES</h2>
-                                            <span class="text-sm text-gray-500 ml-auto">${isMemeTab ? 'Our Generation's Poetry' : 'Pixelated Journals'}</span>
+                                            <span class="text-sm text-gray-500 ml-auto">${isMemeTab ? 'High Score Memes' : 'Legendary Memories'}</span>
                                         </div>
                                         ${this.state.loading ? `
                                             <div class="text-center py-12 tech-box-bg rounded-2xl shadow-lg"><p class="text-gray-400">Loading Data...</p></div>
@@ -1088,7 +1088,7 @@
                             
                             <div class="text-center mb-10">
                                 <h1 class="text-4xl font-extrabold neon-text-cyan mb-2 tracking-widest">LOGIN_INTERFACE</h1>
-                                <p class="text-gray-500 text-lg">Input Hub Credentials.</p>
+                                <p class="text-gray-500 text-lg">Input BT25CSH Credentials.</p>
                             </div>
 
                             <form id="loginForm" class="space-y-6">
