@@ -557,9 +557,15 @@
                     const imageUrl = publicUrlData.publicUrl;
                     
                     // 6. Insert record into database
-                    const tableName = `${type}s`;
+                    let tableName;
+                    if (type === 'memory') {
+                        tableName = 'memories'; // Correct pluralization for the table name
+                    } else {
+                        tableName = `${type}s`; // Works for 'meme' -> 'memes'
+                    }
+                    
                     const { error: dbError } = await supabase
-                        .from(tableName)
+                        .from(tableName) // <-- Uses the corrected table name
                         .insert([
                             {
                                 imageUrl: imageUrl,
