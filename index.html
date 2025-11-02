@@ -12,9 +12,36 @@
         body { 
             margin: 0; 
             font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; 
-            /* MODIFIED: Lighter grey-black background color */
+            /* MODIFIED: Lighter grey-black background color, now mostly darkens the content area */
             background-color: #16171d; 
             color: #c5c8d1; 
+        }
+        
+        /* --- NEW: VIDEO BACKGROUND STYLES --- */
+        #video-background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: -10; /* Set far back */
+        }
+
+        #video-background-container iframe {
+            /* Ensures the video covers the entire container */
+            width: 100vw; 
+            height: 100vh;
+            /* Positioning for full cover effect */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%; 
+            min-height: 100%;
+            
+            /* Apply 50% opacity/brightness filter */
+            filter: opacity(0.5); /* This makes the video translucent */
         }
         
         /* NEW: Utility Classes for a Tech/Neon Look */
@@ -27,8 +54,8 @@
             text-shadow: 0 0 5px #ff0077, 0 0 10px #ff0077, 0 0 20px rgba(255, 0, 119, 0.4);
         }
         .tech-border { border: 2px solid #334155; box-shadow: 0 0 10px rgba(51, 65, 85, 0.5); }
-        /* MODIFIED: Lighter box background */
-        .tech-box-bg { background-color: #24262f; backdrop-filter: blur(3px); }
+        /* MODIFIED: Lighter box background, now with slightly more opacity for the video to show through */
+        .tech-box-bg { background-color: rgba(36, 38, 47, 0.95); backdrop-filter: blur(5px); }
 
         /* Custom scroll behavior */
         .scroll-container { scroll-behavior: smooth; overflow-x: scroll; }
@@ -55,8 +82,9 @@
             animation: pulse-shadow 2s infinite ease-in-out;
         }
 
-        /* --- NEW: C-Matrix Effect --- */
+        /* --- C-Matrix Effect --- (Keeping styles, stopping logic in JS for performance) */
         #cmatrix-background {
+            /* ... (styles remain the same) ... */
             position: fixed;
             top: 0;
             left: 0;
@@ -67,6 +95,7 @@
             background-color: #000;
         }
         .matrix-container {
+            /* ... (styles remain the same) ... */
             position: absolute;
             top: 0;
             left: 0;
@@ -74,11 +103,10 @@
             height: 100%;
             pointer-events: none;
             user-select: none;
-            /* MODIFIED: Increased opacity for better visibility */
             opacity: 0.8; 
         }
 
-        /* --- NEW: Content Transition Animation --- */
+        /* --- Content Transition Animation --- */
         @keyframes fadeInSlideUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -89,6 +117,7 @@
         
         /* NEW: Sparkle Effect for Login */
         .login-sparkle {
+            /* ... (styles remain the same) ... */
             position: absolute;
             width: 8px;
             height: 8px;
@@ -106,6 +135,15 @@
     </style>
 </head>
 <body>
+    <div id="video-background-container">
+        <iframe
+            src="https://www.youtube.com/embed/oN9tYtP9L30?autoplay=1&loop=1&controls=0&mute=1&playlist=oN9tYtP9L30&disablekb=1&modestbranding=1&iv_load_policy=3"
+            frameborder="0"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowfullscreen
+        ></iframe>
+    </div>
+
     <div id="root"></div>
 
     <script type="module">
