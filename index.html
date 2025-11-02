@@ -394,8 +394,8 @@
                 try {
                     const { error } = await supabase
                         .from('notices')
-                        .delete()
                         .eq('id', id);
+                        .delete()
             
                     if (error) {
                         // If Supabase returns an error object, log it directly before throwing
