@@ -476,69 +476,78 @@
             }
 
             // --- UPLOAD, PROMOTE, SCROLL (Retained/Adapted) ---
-            async handleFileUpload(file, type) {
-                // ... (Logic remains the same) ...
-                if (!this.state.isLoggedIn) {
-                    this.state.uploadStatus = 'Please log in to upload.'; 
-                    this.render(); 
+            async handleFileUpload(file, type) {// 1. DEBUG: Log the start
+                console.log(`[DEBUG UPLOAD] Starting handleFileUpload for ${type}.`);
+                
+                if (!file) {
+                    console.error('[DEBUG UPLOAD] Error: No file object received.');
                     return;
                 }
-                if (!file) return;
-                if (!file.type.startsWith('image/')) {
-                    this.state.uploadStatus = 'Please upload an image file'; this.render(); return;
-                }
-                if (file.size > 5 * 1024 * 1024) { 
-                    this.state.uploadStatus = 'Original image must be less than 5MB (we will compress it)'; this.render(); return;
-                }
 
-                this.state.uploadStatus = 'Compressing image...'; this.render();
+                // 2. DEBUG: Log file details
+                console.log(`[DEBUG UPLOAD] File selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
-                try {
-                    const compressedBlob = await compressImage(file);
-                    this.state.uploadStatus = 'Uploading to storage...'; this.render();
-
-                    const timestamp = Date.now();
-                    const collectionName = type === 'memory' ? 'memories' : 'memes';
-                    const fileName = `${collectionName}/${timestamp}-${file.name.replace(/[^a-z0-9.]/gi, '_')}`; 
-                    
-                    const { error: storageError } = await supabase.storage
-                        .from('gallery')
-                        .upload(fileName, compressedBlob, { cacheControl: '3600', upsert: false });
-
-                    if (storageError) throw storageError;
-
-                    const { data: publicUrlData } = supabase.storage
-                        .from('gallery')
-                        .getPublicUrl(fileName);
-                    
-                    const downloadURL = publicUrlData.publicUrl;
-
-                    this.state.uploadStatus = 'Saving metadata to database...'; this.render();
-
-                    const { error: dbError } = await supabase
-                        .from(collectionName)
-                        .insert([{ 
-                            imageUrl: downloadURL,
-                            uploadedBy: this.state.userEmail, 
-                            timestamp: timestamp,
-                            is_hall_of_fame: false 
-                        }]);
-
-                    if (dbError) throw dbError;
-                    
-                    this.state.uploadStatus = `${type === 'memory' ? 'Memory' : 'Meme'} uploaded successfully! 🎉`;
-                    this.loadAllData();
-                    setTimeout(() => {
-                        this.state.uploadStatus = '';
-                        this.render();
-                    }, 3000);
-
-                } catch (err) {
-                    this.state.uploadStatus = `Upload failed: ${err.message}. Check RLS/Storage policies.`;
-                    console.error('Upload error:', err);
-                }
+                const fileExt = file.name.split('.').pop();
+                const filePath = `${type}s/${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+                
+                this.state.uploadStatus = `Uploading ${type}...`; // This is the status they see
                 this.render();
+
+                // 3. DEBUG: Log before the critical Supabase storage call
+                console.log(`[DEBUG UPLOAD] Attempting storage upload to path: ${filePath}`);
+
+                // --- SUPABASE STORAGE UPLOAD ---
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('gallery')
+                    .upload(filePath, file);
+
+                // 4. DEBUG: Log after the critical call
+                console.log('[DEBUG UPLOAD] Supabase storage upload response received.');
+
+                if (uploadError) {
+                    this.state.uploadStatus = `Upload failed: ${uploadError.message}`;
+                    console.error('Upload error (Storage):', uploadError);
+                    this.render();
+                    return;
+                }
+
+                const publicURL = `${supabaseUrl}/storage/v1/object/public/gallery/${filePath}`;
+
+                // 5. DEBUG: Log before DB insertion
+                console.log('[DEBUG UPLOAD] Attempting DB insertion...');
+
+                const { error: dbError } = await supabase
+                    .from(`${type}s`)
+                    .insert({ 
+                        url: publicURL, 
+                        uploadedBy: this.state.userEmail,
+                        createdAt: new Date().toISOString()
+                    });
+                    
+                // 6. DEBUG: Log after DB insertion
+                console.log('[DEBUG UPLOAD] DB insertion completed.');
+
+
+                if (dbError) {
+                    this.state.uploadStatus = `Database save failed: ${dbError.message}`;
+                    console.error('DB error:', dbError);
+                    // Attempt to clean up the storage file if DB save fails
+                    await supabase.storage.from('gallery').remove([filePath]);
+                } else {
+                    this.state.uploadStatus = `${type} uploaded and saved!`;
+                    await this.loadAllData();
+                }
+                
+                setTimeout(() => {
+                    this.state.uploadStatus = '';
+                    this.render();
+                }, 3000);
             }
+
+            async handleVote(id, type) {
+                // Ensure only one vote per session/user is simple enough for this scope
+                const table = `${type}s`;
+                const item = this.state[`${table}`].find(i => i.id === id);
             
             async promoteToHallOfFame(item, type) { 
                 if (!this.state.isAdmin) return;
