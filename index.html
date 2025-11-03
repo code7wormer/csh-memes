@@ -153,6 +153,56 @@
         .content-transition {
             animation: fadeInSlideUp 0.5s ease-out;
         }
+
+        /* --- Image Modal Styles --- */
+        #imageModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        #imageModal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(0, 242, 255, 0.5);
+        }
+        
+        #imageModal .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 48px;
+            color: #00f2ff;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-shadow: 0 0 10px #00f2ff;
+        }
+        
+        #imageModal .close-modal:hover {
+            color: #ff0077;
+            text-shadow: 0 0 20px #ff0077;
+            transform: scale(1.2);
+        }
+
+        .thumbnail-img {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .thumbnail-img:hover {
+            transform: scale(1.05);
+            filter: brightness(1.2);
+        }
     </style>
 </head>
 <body class="">
@@ -298,6 +348,8 @@
                 this.memeScrollInterval = null;
                 this.memoryScrollInterval = null;
                 this.previousTab = null;
+                this.showImageModal = false;
+                this.modalImageUrl = '';
                 this.init();
             }
 
@@ -424,6 +476,19 @@
                 this.state.userEmail = '';
                 this.state.email = '';
                 this.state.password = '';
+                this.closeImageModal();
+                this.render();
+            }
+
+            openImageModal(imageUrl) {
+                this.showImageModal = true;
+                this.modalImageUrl = imageUrl;
+                this.render();
+            }
+
+            closeImageModal() {
+                this.showImageModal = false;
+                this.modalImageUrl = '';
                 this.render();
             }
 
@@ -961,8 +1026,8 @@
                                                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                                                     ${currentData.regular.map(item => `
                                                         <div class="tech-box-bg rounded-xl overflow-hidden shadow-2xl shadow-gray-900/50 hover:shadow-[0_0_20px_#ff0077] transition transform hover:-translate-y-1 relative group border border-gray-700">
-                                                            <div class="aspect-square bg-gray-900 flex items-center justify-center">
-                                                                <img src="${item.imageUrl}" alt="${currentData.type}" class="w-full h-full object-contain p-2">
+                                                            <div class="aspect-square bg-gray-900 flex items-center justify-center overflow-hidden">
+                                                                <img src="${item.imageUrl}" alt="${currentData.type}" class="thumbnail-img w-full h-full object-cover" data-fullsize="${item.imageUrl}">
                                                             </div>
                                                             <div class="p-3">
                                                                 <p class="text-xs text-gray-400">USER: <span class="font-bold text-[#00f2ff]">${item.uploadedBy.split('@')[0]}</span></p>
@@ -1104,6 +1169,17 @@
                     root.innerHTML = this.renderMainPage();
                 }
 
+                // Render image modal if active
+                if (this.showImageModal) {
+                    const modalHtml = `
+                        <div id="imageModal">
+                            <span class="close-modal">×</span>
+                            <img src="${this.modalImageUrl}" alt="Full size image">
+                        </div>
+                    `;
+                    root.insertAdjacentHTML('beforeend', modalHtml);
+                }
+
                 this.attachEventListeners();
                 
                 requestAnimationFrame(() => {
@@ -1223,6 +1299,29 @@
                         this.removeFromHallOfFame(itemId, type);
                     };
                 });
+
+                // Image thumbnail click handlers
+                document.querySelectorAll('.thumbnail-img').forEach(img => {
+                    img.onclick = (e) => {
+                        e.stopPropagation();
+                        const fullsizeUrl = img.getAttribute('data-fullsize');
+                        this.openImageModal(fullsizeUrl);
+                    };
+                });
+
+                // Modal close handlers
+                const imageModal = document.getElementById('imageModal');
+                if (imageModal) {
+                    const closeBtn = imageModal.querySelector('.close-modal');
+                    if (closeBtn) {
+                        closeBtn.onclick = () => this.closeImageModal();
+                    }
+                    imageModal.onclick = (e) => {
+                        if (e.target === imageModal) {
+                            this.closeImageModal();
+                        }
+                    };
+                }
             }
             
             scrollMemes(direction) { 
