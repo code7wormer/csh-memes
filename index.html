@@ -350,7 +350,52 @@
                 this.previousTab = null;
                 this.showImageModal = false;
                 this.modalImageUrl = '';
+                this.loadSessionFromStorage();
                 this.init();
+            }
+
+            loadSessionFromStorage() {
+                try {
+                    const session = localStorage.getItem('csh_session');
+                    if (session) {
+                        const data = JSON.parse(session);
+                        const now = Date.now();
+                        // Check if session is still valid (24 hours)
+                        if (data.expiry && now < data.expiry) {
+                            this.state.isLoggedIn = data.isLoggedIn || false;
+                            this.state.isAdmin = data.isAdmin || false;
+                            this.state.isNoticesAdmin = data.isNoticesAdmin || false;
+                            this.state.userEmail = data.userEmail || '';
+                        } else {
+                            localStorage.removeItem('csh_session');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to load session:', e);
+                }
+            }
+
+            saveSessionToStorage() {
+                try {
+                    const session = {
+                        isLoggedIn: this.state.isLoggedIn,
+                        isAdmin: this.state.isAdmin,
+                        isNoticesAdmin: this.state.isNoticesAdmin,
+                        userEmail: this.state.userEmail,
+                        expiry: Date.now() + (24 * 60 * 60 * 1000) // 24 hours from now
+                    };
+                    localStorage.setItem('csh_session', JSON.stringify(session));
+                } catch (e) {
+                    console.error('Failed to save session:', e);
+                }
+            }
+
+            clearSessionFromStorage() {
+                try {
+                    localStorage.removeItem('csh_session');
+                } catch (e) {
+                    console.error('Failed to clear session:', e);
+                }
             }
 
             async init() {
@@ -445,6 +490,7 @@
                 this.state.showLogin = false;
                 CMatrix.stop();
                 
+                this.saveSessionToStorage();
                 this.render();
                 this.triggerSparkleEffect(); 
             }
@@ -476,6 +522,7 @@
                 this.state.userEmail = '';
                 this.state.email = '';
                 this.state.password = '';
+                this.clearSessionFromStorage();
                 this.closeImageModal();
                 this.render();
             }
@@ -1128,8 +1175,8 @@
                                 ${items.map(item => `
                                     <div class="snap-start snap-full px-2 py-1">
                                         <div class="bg-[#1a1b26] rounded-2xl overflow-hidden shadow-2xl hof-card relative mx-auto">
-                                            <div class="aspect-[16/9] bg-gray-900 flex items-center justify-center">
-                                                <img src="${item.imageUrl}" alt="Hall of Fame" class="w-full h-full object-contain p-4">
+                                            <div class="aspect-[16/9] bg-gray-900 flex items-center justify-center overflow-hidden">
+                                                <img src="${item.imageUrl}" alt="Hall of Fame" class="thumbnail-img w-full h-full object-cover cursor-pointer" data-fullsize="${item.imageUrl}">
                                             </div>
                                             <div class="p-5 flex items-center justify-between bg-gradient-to-r ${bgGradient}">
                                                 <div>
