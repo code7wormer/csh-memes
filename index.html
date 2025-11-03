@@ -12,20 +12,19 @@
         body { 
             margin: 0; 
             font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; 
-            /* MODIFIED: Made transparent to allow video background */
             background-color: transparent; 
-            color: #c5c8d1; /* Light grey/off-white for contrast */
+            color: #c5c8d1;
         }
         
-        /* --- MODIFIED: Background Video CSS --- */
+        /* --- Background Video CSS --- */
         #video-background-color {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #0b0c10; /* Original background color */
-            z-index: -3; /* Places it behind the video */
+            background-color: #0b0c10;
+            z-index: -3;
         }
         #bg-video {
             position: fixed;
@@ -33,13 +32,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Ensures video covers screen */
-            z-index: -2; /* On top of color, behind scanlines */
-            opacity: 0.3; /* 50% opacity as requested */
+            object-fit: cover;
+            z-index: -2;
+            opacity: 0.3;
         }
-        /* --- END: Background Video CSS --- */
         
-        /* NEW: Utility Classes for a Tech/Neon Look */
+        /* --- Utility Classes --- */
         .neon-text-cyan { 
             color: #00f2ff;
             text-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff, 0 0 20px rgba(0, 242, 255, 0.4);
@@ -81,15 +79,15 @@
             100% { background-position: 100% 100%; }
         }
         
-        /* MODIFIED: Scanline effect moved to its own overlay */
+        /* Scanline effect overlay */
         #scanline-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none; /* Lets clicks pass through */
-            z-index: -1; /* Sits on top of video, behind all content */
+            pointer-events: none;
+            z-index: -1;
             background-image: linear-gradient(
                 rgba(255, 255, 255, 0.05) 1px, 
                 transparent 1px
@@ -133,7 +131,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            z-index: 40; /* Behind login modal (50) */
+            z-index: 40;
             background-color: #000;
         }
         .matrix-container {
@@ -171,13 +169,8 @@
         // --- SUPABASE CLIENT IMPORT ---
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-        // =================================================================
-        // !!! 🚨 ACTION REQUIRED: REPLACE YOUR_SUPABASE_PROJECT_URL 🚨 !!!
-        // =================================================================
         const supabaseUrl = 'https://vspbfgmfszadpbegmous.supabase.co'; 
-        // NOTE: Use your Supabase 'anon' key here.
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzcGJmZ21mc3phZHBiZWdtb3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTg3MTMsImV4cCI6MjA3NzU5NDcxM30.Phjr2R8e22YH8PNUCP0Ls-_gE8pSRIFel34bvbJCUoQ'; 
-        // =================================================================
         
         const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -195,7 +188,7 @@
                 if(oldContainer) oldContainer.remove();
             },
             start() {
-                if(this.interval) return; // Already running
+                if(this.interval) return;
 
                 const body = document.body;
                 const matrixDiv = document.createElement('div');
@@ -220,10 +213,10 @@
                 const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+=-{}[]:;\"'<>,.?/\\|";
 
                 const draw = () => {
-                    ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; // Use black fade
+                    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
                     ctx.fillRect(0, 0, width, height);
 
-                    ctx.fillStyle = "#00ff41"; // Green text
+                    ctx.fillStyle = "#00ff41";
                     ctx.font = font_size + "px monospace";
 
                     for(let i = 0; i < drops.length; i++) {
@@ -240,7 +233,6 @@
                     }
                 };
 
-                // Resize handler to update canvas dimensions
                 const handleResize = () => {
                     width = canvas.width = window.innerWidth;
                     height = canvas.height = window.innerHeight;
@@ -255,7 +247,6 @@
                 window.addEventListener('resize', handleResize);
                 this.interval = setInterval(draw, 50);
 
-                // Add resize cleanup to the stop function
                 const originalStop = this.stop.bind(this);
                 this.stop = () => {
                     originalStop();
@@ -264,7 +255,7 @@
             }
         };
 
-        // Lucide Icons (Star and Lock removed)
+        // Lucide Icons
         const icons = {
             Upload: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-cyan"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
             LogOut: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#ff0077" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-pink"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`,
@@ -277,58 +268,10 @@
             Bell: (size = 24) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#00f2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="neon-text-cyan"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`
         };
 
-        // Helper function to extract the Storage file path from the full public URL
         function extractFilePath(url) {
             const parts = url.split('/storage/v1/object/public/gallery/');
             return parts.length > 1 ? parts[1] : null;
         }
-
-        // Compress image to a Blob
-        function compressImage(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        
-                        const maxDimension = 1200; 
-                        if (width > maxDimension || height > maxDimension) {
-                            if (width > height) {
-                                height = (height / width) * maxDimension;
-                                width = maxDimension;
-                            } else {
-                                width = (width / height) * maxDimension;
-                                height = maxDimension;
-                            }
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        canvas.toBlob(
-                            (blob) => {
-                                if (blob) {
-                                    resolve(blob);
-                                } else {
-                                    reject(new Error('Canvas to Blob conversion failed'));
-                                }
-                            },
-                            'image/jpeg',
-                            0.7
-                        );
-                    };
-                    img.onerror = reject;
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                };
-            });
-        }
-
 
         class MemeGallery {
             constructor() {
@@ -354,6 +297,7 @@
                 };
                 this.memeScrollInterval = null;
                 this.memoryScrollInterval = null;
+                this.previousTab = null;
                 this.init();
             }
 
@@ -373,9 +317,7 @@
                     console.error('Error loading notices:', error);
                 }
                 this.state.notices = data || [];
-                this.render(); 
             }
-
 
             async loadAllData() {
                 this.state.loading = true;
@@ -408,10 +350,8 @@
                     console.log('Error loading data:', err);
                 }
                 this.state.loading = false;
-                this.render(); 
             }
 
-            // --- REVISED LOGIN LOGIC ---
             handleLogin(e) {
                 e.preventDefault();
                 this.state.error = '';
@@ -424,19 +364,16 @@
                 let isAdminCheck = false; 
                 let isNoticesAdminCheck = false; 
 
-                // Admin 050 (Full Admin + Notices)
                 if (emailLower === 'bt25csh050@iiitn.ac.in') {
                     expectedPassword = 'wushangclanssSS11!!';
                     isAdminCheck = true;
                     isNoticesAdminCheck = true; 
                 } 
-                // Admin 051 (Notices Only)
                 else if (emailLower === 'bt25csh051@iiitn.ac.in') {
                     expectedPassword = 'iambtechboy'; 
                     isAdminCheck = false;
                     isNoticesAdminCheck = true; 
                 }
-                // Regular User credentials
                 else if (emailRegex.test(emailLower)) {
                     expectedPassword = 'cshgoated'; 
                     isAdminCheck = false;
@@ -454,14 +391,12 @@
                 this.state.isNoticesAdmin = isNoticesAdminCheck;
                 this.state.userEmail = emailLower; 
                 this.state.showLogin = false;
-                CMatrix.stop(); // MODIFIED: Stop C-Matrix on successful login
+                CMatrix.stop();
                 
                 this.render();
-                // NEW: Trigger sparkle effect on successful login
                 this.triggerSparkleEffect(); 
             }
             
-            // NEW: Sparkle Effect function
             triggerSparkleEffect() {
                 const nav = document.querySelector('nav');
                 if (!nav) return;
@@ -470,20 +405,17 @@
                     const sparkle = document.createElement('div');
                     sparkle.className = 'login-sparkle';
                     
-                    // Random positions near the CSH Gallery title
-                    const x = Math.random() * 200 - 100; // -100 to 100
-                    const y = Math.random() * 50 - 25; // -25 to 25
+                    const x = Math.random() * 200 - 100;
+                    const y = Math.random() * 50 - 25;
                     
                     sparkle.style.left = `${nav.querySelector('h1').offsetLeft + nav.querySelector('h1').offsetWidth / 2 + x}px`;
                     sparkle.style.top = `${nav.querySelector('h1').offsetTop + nav.querySelector('h1').offsetHeight / 2 + y}px`;
                     sparkle.style.animationDelay = `${Math.random() * 0.5}s`;
                     nav.appendChild(sparkle);
                     
-                    // Remove sparkle after animation
                     setTimeout(() => nav.removeChild(sparkle), 1000);
                 }
             }
-            // --- END NEW FUNCTION ---
 
             handleLogout() {
                 this.state.isLoggedIn = false;
@@ -495,7 +427,6 @@
                 this.render();
             }
 
-            // --- ADMIN WIPE AND ARCHIVE FUNCTION (UNCHANGED) ---
             async handleWipeAndArchive() {
                 if (!this.state.isAdmin) return;
                 
@@ -568,8 +499,9 @@
                     if (noticesDeleteError) console.error('Notices table deletion failed. Check RLS.');
 
                     this.state.uploadStatus = `ARCHIVE & WIPE SUCCESSFUL: ${allUrls.length} files archived and all data/files deleted. Space is now free!`;
-                    this.loadAllData(); 
-                    this.loadNotices(); 
+                    await this.loadAllData(); 
+                    await this.loadNotices(); 
+                    this.render();
                     
                 } catch (err) {
                     this.state.uploadStatus = `WIPE FAILED: ${err.message}`;
@@ -578,7 +510,6 @@
                 }
             }
             
-            // --- DELETE INDIVIDUAL MEME/MEMORY FUNCTION ---
             async handleDeleteItem(id, type) {
                 if (!this.state.isAdmin) return;
                 this.state.uploadStatus = `Deleting ${type}...`;
@@ -587,7 +518,6 @@
                 try {
                     const table = type === 'memory' ? 'memories' : 'memes';
                     
-                    // 1. Get the imageUrl to delete the file from storage
                     const { data: itemData, error: fetchError } = await supabase
                         .from(table)
                         .select('imageUrl')
@@ -598,7 +528,6 @@
 
                     const filePath = extractFilePath(itemData.imageUrl);
 
-                    // 2. Delete the file from storage
                     if (filePath) {
                         const { error: storageError } = await supabase.storage
                             .from('gallery')
@@ -607,7 +536,6 @@
                         if (storageError) console.error('Storage deletion error (non-fatal for DB cleanup):', storageError);
                     }
 
-                    // 3. Delete the entry from the database
                     const { error: dbError } = await supabase
                         .from(table)
                         .delete()
@@ -616,7 +544,8 @@
                     if (dbError) throw dbError;
                     
                     this.state.uploadStatus = `${type} deleted successfully.`;
-                    this.loadAllData(); // Reload data
+                    await this.loadAllData();
+                    this.render();
                     setTimeout(() => {
                         this.state.uploadStatus = '';
                         this.render();
@@ -625,11 +554,10 @@
                 } catch (err) {
                     this.state.uploadStatus = `Deletion failed: ${err.message}.`;
                     console.error('Item deletion error:', err);
+                    this.render();
                 }
-                this.render();
             }
 
-            // --- DELETE INDIVIDUAL NOTICE FUNCTION ---
             async handleDeleteNotice(id) {
                 if (!this.state.isNoticesAdmin) {
                     console.error("DEBUG ERROR: Admin check failed. Delete request blocked.");
@@ -651,7 +579,8 @@
                     }
                     
                     this.state.uploadStatus = 'Notice deleted successfully.';
-                    this.loadNotices(); 
+                    await this.loadNotices(); 
+                    this.render();
                     setTimeout(() => {
                         this.state.uploadStatus = '';
                         this.render();
@@ -660,18 +589,16 @@
                 } catch (err) {
                     this.state.uploadStatus = `Deletion failed: ${err.message}. Check browser console (F12) for full error details.`;
                     console.error('FINAL NOTICE DELETION ERROR:', err);
+                    this.render();
                 }
-                this.render();
             }
 
-            // --- ADD NOTICE FUNCTION (WITH 10-NOTICE LIMIT) ---
             async handleAddNotice(content) {
                 if (!this.state.isNoticesAdmin || !content.trim()) return;
                 this.state.uploadStatus = 'Posting notice...';
                 this.render();
 
                 try {
-                    // 1. Check current count and enforce limit (pop oldest)
                     if (this.state.notices.length >= 10) {
                         this.state.uploadStatus = 'Notice limit reached (10). Deleting oldest notice...';
                         this.render();
@@ -688,7 +615,6 @@
                         }
                     }
 
-                    // 2. Insert new notice
                     const { error } = await supabase
                         .from('notices')
                         .insert([
@@ -703,7 +629,8 @@
                     
                     this.state.uploadStatus = 'Notice posted successfully! 📢';
                     document.getElementById('noticeContentInput').value = '';
-                    this.loadNotices();
+                    await this.loadNotices();
+                    this.render();
                     setTimeout(() => {
                         this.state.uploadStatus = '';
                         this.render();
@@ -712,11 +639,10 @@
                 } catch (err) {
                     this.state.uploadStatus = `Notice post failed: ${err.message}. Check RLS on 'notices' table.`;
                     console.error('Notice error:', err);
+                    this.render();
                 }
-                this.render();
             }
 
-            // --- UPLOAD FUNCTION (WITH COMPRESSION) ---
             async handleFileUpload(file, type) {
                 if (!file || !this.state.isLoggedIn) {
                     document.getElementById('fileInput').value = '';
@@ -727,7 +653,6 @@
                 this.render();
             
                 try {
-                    // 2. Compression Logic
                     const compressedBlob = await new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = (e) => {
@@ -804,15 +729,16 @@
                     if (dbError) throw dbError;
             
                     this.state.uploadStatus = `${type} uploaded successfully! 🎉`;
-                    this.loadAllData(); 
+                    await this.loadAllData(); 
+                    this.render();
                     
                 } catch (error) {
                     console.error('Upload Error:', error);
                     this.state.uploadStatus = `Upload Failed: ${error.message}. Check browser console for RLS or configuration errors.`;
+                    this.render();
                     
                 } finally {
                     document.getElementById('fileInput').value = ''; 
-                    this.render();
                     setTimeout(() => {
                         this.state.uploadStatus = '';
                         this.render();
@@ -830,7 +756,8 @@
                         .eq('id', item.id);
                     
                     if (error) throw error;
-                    this.loadAllData(); 
+                    await this.loadAllData(); 
+                    this.render();
                 } catch (err) {
                     console.error('Failed to promote:', err);
                 }
@@ -846,13 +773,13 @@
                         .eq('id', itemId);
                     
                     if (error) throw error;
-                    this.loadAllData(); 
+                    await this.loadAllData(); 
+                    this.render();
                 } catch (err) {
                     console.error('Failed to remove:', err);
                 }
             }
             
-            // --- RENDERING ---
             renderNoticesTab() {
                 const isNoticesAdmin = this.state.isNoticesAdmin;
                 
@@ -924,7 +851,6 @@
                 `;
             }
 
-
             renderMainPage() {
                 const isMemeTab = this.state.currentTab === 'memes';
                 const isMemoryTab = this.state.currentTab === 'memories';
@@ -938,6 +864,8 @@
                 const memoryTabClass = 'border-[#00f2ff] text-[#00f2ff]';
                 const tabColor = isMemeTab ? memeTabClass : memoryTabClass;
                 const tabColorHover = isMemeTab ? 'hover:text-[#ff0077]' : 'hover:text-[#00f2ff]';
+
+                const shouldAnimate = this.previousTab !== null && this.previousTab !== this.state.currentTab;
 
                 return `
                     <div class="min-h-screen">
@@ -990,8 +918,8 @@
 
                         <div class="max-w-7xl mx-auto px-4 py-12">
                             
-                            ${isNoticesTab ? this.renderNoticesTab() : `
-                                <div id="gated-section-container">
+                            ${isNoticesTab ? `<div id="notices-content" ${shouldAnimate ? 'class="content-transition"' : ''}>${this.renderNoticesTab()}</div>` : `
+                                <div id="gated-section-container" ${shouldAnimate ? 'class="content-transition"' : ''}>
                                     <div class="mb-16">
                                         <div class="flex items-center gap-3 mb-6">
                                             ${isMemeTab ? icons.Image(36) : icons.Heart(36)}
@@ -1073,16 +1001,15 @@
                 `;
             }
 
-            // --- CMatrix helper function ---
             renderCMatrix() {
                 CMatrix.start();
                 return ''; 
             }
 
-            // --- RENDER LOGIN MODAL ---
             renderLoginModal() {
                  return `
-                    ${this.renderCMatrix()} <div class="fixed inset-0 bg-gray-900 bg-opacity-95 backdrop-blur-md flex items-center justify-center z-50">
+                    ${this.renderCMatrix()}
+                    <div class="fixed inset-0 bg-gray-900 bg-opacity-95 backdrop-blur-md flex items-center justify-center z-50">
                         <div class="bg-[#1a1b26] rounded-3xl shadow-2xl shadow-cyan-500/50 p-6 sm:p-10 w-11/12 max-w-md relative transform transition-all scale-100 duration-300 tech-border border-[#00f2ff] animate-pulse-shadow">
                             <button id="closeLogin" class="absolute top-5 right-5 text-gray-400 hover:text-[#00f2ff] text-3xl transition z-10">×</button>
                             
@@ -1167,14 +1094,13 @@
                 `;
             }
 
-
             render() {
                 const root = document.getElementById('root');
                 
                 if (this.state.showLogin) {
                     root.innerHTML = this.renderLoginModal();
                 } else {
-                    CMatrix.stop(); // Ensure matrix is stopped if not on login
+                    CMatrix.stop();
                     root.innerHTML = this.renderMainPage();
                 }
 
@@ -1196,7 +1122,6 @@
             }
 
             attachEventListeners() {
-                // MODIFIED: Added CMatrix.stop() to close button
                 const closeLogin = document.getElementById('closeLogin');
                 if (closeLogin) closeLogin.onclick = () => { this.state.showLogin = false; CMatrix.stop(); this.render(); };
 
@@ -1212,15 +1137,12 @@
                 const loginBtn = document.getElementById('loginBtn');
                 if (loginBtn) loginBtn.onclick = (e) => this.handleLogin(e); 
 
-
                 const logoutBtn = document.getElementById('logoutBtn');
                 if (logoutBtn) logoutBtn.onclick = () => this.handleLogout();
                 
-                // Admin Wipe Button
                 const wipeAndArchiveBtn = document.getElementById('wipeAndArchiveBtn');
                 if (wipeAndArchiveBtn) wipeAndArchiveBtn.onclick = () => this.handleWipeAndArchive();
                 
-                // New Notice Post Button
                 const postNoticeBtn = document.getElementById('postNoticeBtn');
                 if (postNoticeBtn) postNoticeBtn.onclick = () => {
                     const contentInput = document.getElementById('noticeContentInput');
@@ -1229,7 +1151,6 @@
                     }
                 };
                 
-                // Notice Delete Buttons
                 document.querySelectorAll('[data-delete-notice]').forEach(btn => {
                     btn.onclick = () => {
                         const noticeId = parseInt(btn.getAttribute('data-delete-notice'));
@@ -1243,7 +1164,6 @@
                     };
                 });
 
-                // Item Delete Buttons (Memes/Memories)
                 document.querySelectorAll('[data-delete-item]').forEach(btn => {
                     btn.onclick = () => {
                         const itemId = parseInt(btn.getAttribute('data-delete-item'));
@@ -1254,7 +1174,6 @@
                     };
                 });
 
-
                 const emailInput = document.getElementById('emailInput');
                 if (emailInput) emailInput.oninput = (e) => { this.state.email = e.target.value; };
 
@@ -1264,38 +1183,15 @@
                 const fileInput = document.getElementById('fileInput');
                 if (fileInput) fileInput.onchange = (e) => this.handleFileUpload(e.target.files[0], this.state.currentTab === 'memories' ? 'memory' : 'meme');
 
-                // MODIFIED: Tab switching logic for animation
                 document.querySelectorAll('[data-tab]').forEach(btn => {
                     btn.onclick = () => {
                         const newTab = btn.getAttribute('data-tab');
                         if (this.state.currentTab !== newTab) {
+                            this.previousTab = this.state.currentTab;
                             this.state.currentTab = newTab;
-                            
-                            // Remove animation class before re-rendering
-                            const gatedSection = document.getElementById('gated-section-container');
-                            if (gatedSection) {
-                                gatedSection.classList.remove('content-transition'); 
-                            }
-                            const noticesContent = document.getElementById('notices-content');
-                            if (noticesContent) {
-                                noticesContent.classList.remove('content-transition'); 
-                            }
-                            
-                            this.render(); // Re-render the UI
+                            this.render();
                         }
                     };
-                });
-                
-                // MODIFIED: Added requestAnimationFrame to re-add transition class
-                requestAnimationFrame(() => {
-                    const gatedSection = document.getElementById('gated-section-container');
-                    if (gatedSection) {
-                        gatedSection.classList.add('content-transition');
-                    }
-                    const noticesContent = document.getElementById('notices-content');
-                    if (noticesContent) {
-                        noticesContent.classList.add('content-transition');
-                    }
                 });
                 
                 document.querySelectorAll('[data-scroll]').forEach(btn => {
@@ -1329,7 +1225,6 @@
                 });
             }
             
-            // Auto-scroll and manual scroll functions
             scrollMemes(direction) { 
                 const container = document.getElementById('meme-scroll-container');
                 if (!container || this.state.hallOfFameMemes.length === 0) return;
@@ -1343,7 +1238,8 @@
                 }
                 
                 this.state.memeScrollIndex = newIndex;
-                this.render(); 
+                const width = container.offsetWidth;
+                container.scrollLeft = width * newIndex;
             }
 
             scrollMemories(direction) { 
@@ -1359,7 +1255,8 @@
                 }
 
                 this.state.memoryScrollIndex = newIndex;
-                this.render(); 
+                const width = container.offsetWidth;
+                container.scrollLeft = width * newIndex;
             }
 
             startAutoScroll() {
@@ -1379,7 +1276,6 @@
             }
         }
 
-        // --- Defer initialization until the DOM is ready ---
         document.addEventListener('DOMContentLoaded', () => {
             new MemeGallery();
         });
